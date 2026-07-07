@@ -1,0 +1,145 @@
+.landing {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f2f2f2;
+}
+
+.card {
+  background: white;
+  padding: 2rem;
+  border-radius: 18px;
+  width: 360px;
+
+  box-shadow:
+    0 10px 25px rgba(0, 0, 0, 0.08),
+    0 2px 6px rgba(0, 0, 0, 0.05);
+
+  backdrop-filter: blur(6px);
+  animation: fadeUp 0.35s ease-out;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card h1 {
+  text-align: center;
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 1.5rem;
+  text-shadow: 2px 2px 8px rgba(0, 0, 0, .2)
+}
+
+/* ----- Form layout ----- */
+
+.card label {
+  display: block;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
+.card input[type="text"],
+.card input[type="number"],
+.card select {
+  width: 100%;
+  padding: 0.4rem;
+  margin-bottom: 1rem;
+  font-size: 0.9rem
+}
+
+/* ----- Radio group ----- */
+.radio-group {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 0.75rem;
+  margin-bottom: 1rem;
+  background: #f9fafb;
+}
+
+.radio-group legend {
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0 0.4rem;
+  color: #374151;
+}
+
+/* Container for options */
+.radio-options {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+}
+
+/* Each option = one clean row */
+.radio-options label {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #111827;
+
+  cursor: pointer;
+}
+
+/* Normalize radio appearance */
+.radio-options input[type="radio"] {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  flex-shrink: 0;
+}
+/* ----- Checkbox ----- */
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  margin-bottom: 1.2rem;
+}
+/* ----- Checkbox row ----- */
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+
+  margin-bottom: 1.2rem;
+
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #111827;
+}
+
+/* Normalize checkbox appearance */
+.checkbox-row input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+/* ----- Button ----- */
+
+.card button {
+  width: 100%;
+  padding: 0.5rem;
+  font-size: 1rem;
+}
+
+.card button:disabled {
+  opacity: 0.5;
+}
