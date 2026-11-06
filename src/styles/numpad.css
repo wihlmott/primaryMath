@@ -1,0 +1,52 @@
+/* ======================================================
+   On-screen number pad
+   ====================================================== */
+
+.numpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 260px;
+  margin: 1rem auto 0;
+}
+
+.numpad button {
+  margin: 0;
+  padding: 0.8rem 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+  background: white;
+  border-radius: 12px;
+
+  /* no double-tap zoom, no text selection on rapid taps */
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.numpad button:active {
+  transform: scale(0.95);
+  box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.numpad .numpad-back {
+  background: #fee2e2;
+}
+
+.numpad .numpad-check {
+  background: linear-gradient(180deg, #22c55e, #16a34a);
+  color: white;
+}
+
+/* Active answer cell (add to game.css or leave here) */
+.input.active {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+}
+
+/* Answer cells are driven by the pad, so hide the text caret */
+.input {
+  caret-color: transparent;
+  cursor: pointer;
+}

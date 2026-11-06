@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getCarryColumns } from "../utils/mathEngine";
 import CarryBorrowHint from "./CarryBorrowHint";
+import NumberPad from "./NumberPad";
 
 const DIGITS = 3;
+const LAST = DIGITS - 1; // rightmost (ones) column
 
 /**
  * Right-align a number into digit columns
@@ -13,6 +15,8 @@ function toDigits(num) {
 
 export default function ColumnProblem({ problem, onSubmit, showCarryBorrow }) {
     const [answer, setAnswer] = useState([]);
+    // Start at the ones column, like real column math
+    const [active, setActive] = useState(LAST);
 
     const top = toDigits(problem.a);
     const bottom = toDigits(problem.b);
@@ -29,15 +33,65 @@ export default function ColumnProblem({ problem, onSubmit, showCarryBorrow }) {
      * into a column offset from the left of digit area
      */
     function carryToLeftOffset(carryIndex) {
-        // DIGITS columns, right-aligned
         const digitIndexFromLeft = DIGITS - carryIndex;
         return digitIndexFromLeft;
     }
 
-    function submit() {
-        onSubmit(Number(answer.join("")));
-        setAnswer([]);
+    /* ---------- Input handlers (number pad + physical keyboard) ---------- */
+
+    function pressDigit(d) {
+        setAnswer((prev) => {
+            const next = [...prev];
+            next[active] = d;
+            return next;
+        });
+        // Move left to the next column (tens, then hundreds)
+        setActive((a) => Math.max(0, a - 1));
     }
+
+    function pressBackspace() {
+        if (answer[active]) {
+            // Current cell has a digit: clear it
+            setAnswer((prev) => {
+                const next = [...prev];
+                next[active] = "";
+                return next;
+            });
+        } else if (active < LAST) {
+            // Current cell empty: step back right and clear that one
+            const target = active + 1;
+            setAnswer((prev) => {
+                const next = [...prev];
+                next[target] = "";
+                return next;
+            });
+            setActive(target);
+        }
+    }
+
+    function submit() {
+        const joined = answer.join("");
+        if (joined === "") return; // nothing entered yet
+        onSubmit(Number(joined));
+        setAnswer([]);
+        setActive(LAST);
+    }
+
+    // Physical keyboard support on desktop
+    useEffect(() => {
+        function onKey(e) {
+            if (/^\d$/.test(e.key)) {
+                pressDigit(e.key);
+            } else if (e.key === "Backspace") {
+                pressBackspace();
+            } else if (e.key === "Enter") {
+                e.preventDefault(); // avoid double-firing a focused button
+                submit();
+            }
+        }
+        window.addEventListener("keydown", onKey);
+        return () => window.removeEventListener("keydown", onKey);
+    });
 
     return (
         <div className="column-math">
@@ -73,26 +127,26 @@ export default function ColumnProblem({ problem, onSubmit, showCarryBorrow }) {
                 {/* Divider */}
                 <div className="divider" />
 
-                {/* Answer row */}
+                {/* Answer row: read-only, driven by the number pad.
+                    Tap a cell to select it. */}
                 <div className="cell operator"></div>
                 {result.map((_, i) => (
                     <input
                         key={`ans-${i}`}
-                        className="cell input"
-                        maxLength={1}
+                        className={`cell input${i === active ? " active" : ""}`}
                         value={answer[i] || ""}
-                        onChange={(e) => {
-                            const next = [...answer];
-                            next[i] = e.target.value.replace(/\D/, "");
-                            setAnswer(next);
-                        }}
+                        readOnly
+                        inputMode="none"
+                        onClick={() => setActive(i)}
                     />
                 ))}
             </div>
 
-            <button className="check-btn" onClick={submit}>
-                Check
-            </button>
+            <NumberPad
+                onDigit={pressDigit}
+                onBackspace={pressBackspace}
+                onSubmit={submit}
+            />
         </div>
     );
 }
