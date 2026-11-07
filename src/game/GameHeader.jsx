@@ -1,14 +1,17 @@
 import { motion } from "framer-motion";
 import { LEVELS } from "../utils/adventure";
+import Avatar from "../components/Avatar";
 import "../styles/layout.css";
 
 export default function GameHeader({
     name,
     avatar,
+    equipped,
     level,
     points,
     hearts,
     maxHearts,
+    heartHint, // answers until the next bonus heart (no-limit games), else null
     solved,
     total, // number, or null when there is no question limit
     perLevel,
@@ -29,7 +32,8 @@ export default function GameHeader({
 
             <div className="status">
                 <span className="name">
-                    {avatar} {name}
+                    <Avatar id={avatar} equipped={equipped} size={34} />
+                    {name}
                 </span>
                 <span>
                     Level {level} {island?.emoji}
@@ -57,6 +61,10 @@ export default function GameHeader({
                     })}
                 </div>
 
+                {heartHint != null && (
+                    <span className="heart-hint">next ❤️ in {heartHint}</span>
+                )}
+
                 <span>
                     {total == null
                         ? `Problem ${solved + 1} · ∞`
@@ -80,7 +88,7 @@ export default function GameHeader({
             </div>
             <div className="level-progress-label">
                 {atMaxLevel
-                    ? `Top level! 🏆 Every ${perLevel} right earns a heart`
+                    ? "Top level! 🏆"
                     : `${intoLevel} of ${perLevel} to Level ${level + 1}`}
             </div>
         </header>

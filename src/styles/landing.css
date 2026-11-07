@@ -321,3 +321,84 @@
   margin: 0;
   flex-shrink: 0;
 }
+
+/* ----- Saved players show their explorer ----- */
+
+.profile-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding-left: 0.5rem;
+}
+
+.avatar-body {
+  padding: 0.45rem 0 0.2rem;
+}
+
+/* ----- Reset controls ----- */
+
+.reset-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.outline-btn {
+  width: 100%;
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  background: white;
+  border: 2px solid #cbd5e1;
+  border-radius: 12px;
+  box-shadow: none;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.outline-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.danger-text {
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.confirm-box {
+  padding: 0.8rem;
+  background: #fef2f2;
+  border: 2px solid #fecaca;
+  border-radius: 14px;
+}
+
+.confirm-box p {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+  line-height: 1.35;
+}
+
+.confirm-warning {
+  font-weight: 700;
+  color: #b91c1c;
+}
+
+.confirm-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+}
+
+.danger-btn {
+  width: 100%;
+  margin: 0;
+  padding: 0.65rem 0.8rem;
+  background: #dc2626;
+  border-radius: 12px;
+  box-shadow: none;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: white;
+}

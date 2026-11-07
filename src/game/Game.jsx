@@ -9,12 +9,17 @@ import LevelUpBanner from "./LevelUpBanner";
 import ScoreToast from "./ScoreToast";
 
 import { generateProblem } from "../utils/mathEngine";
-import { MAX_LEVEL } from "../utils/adventure";
+import {
+    BONUS_MAX_HEARTS,
+    HEART_EVERY,
+    MAX_HEARTS,
+    MAX_LEVEL,
+    normalizeAvatar,
+} from "../utils/adventure";
 import { awardStickers, loadLearner, saveLearner } from "../utils/progress";
 import "../styles/game.css";
 
 /* ---------- Tuning knobs ---------- */
-const MAX_HEARTS = 3;
 const POINTS_FIRST_TRY = 10;
 const POINTS_AFTER_RETRY = 5;
 
@@ -66,14 +71,26 @@ export default function Game({
     onExitGame,
 }) {
     const infinite = maxQuestions == null;
+    const avatarId = normalizeAvatar(avatar);
+
+    // No-limit games can hold more hearts, and earn one every HEART_EVERY answers
+    const maxHearts = infinite ? BONUS_MAX_HEARTS : MAX_HEARTS;
 
     // An emptied number field gives 0 (or NaN), which would break `%` and
     // stop level-ups. Always use a whole number >= 1.
     const perLevel = Math.max(1, Math.floor(Number(correctsPerLevel)) || 1);
 
+    // Saved progress lives in a ref so several updates in one event stay in order
+    const learnerRef = useRef(null);
+    const bestRunBefore = useRef(null);
+    if (learnerRef.current === null) {
+        learnerRef.current = loadLearner(learnerName, avatarId);
+        bestRunBefore.current = learnerRef.current.bestRun;
+    }
+
     const [level, setLevel] = useState(startingLevel);
     const [points, setPoints] = useState(0);
-    const [hearts, setHearts] = useState(MAX_HEARTS);
+    const [hearts, setHearts] = useState(MAX_HEARTS); // always start with 3
     const [solved, setSolved] = useState(0); // correct answers this round
     const [mistakes, setMistakes] = useState(0); // wrong tries this round
     const [cleanStreak, setCleanStreak] = useState(0); // right first time, in a row
@@ -83,23 +100,16 @@ export default function Game({
     const [result, setResult] = useState(null); // null | { completed, stars }
     const [confirmLeave, setConfirmLeave] = useState(false);
     const [earnedList, setEarnedList] = useState([]); // stickers won this round
+    const [equipped, setEquipped] = useState(() => learnerRef.current.equipped);
 
     const [toast, setToast] = useState(null);
-    const [banner, setBanner] = useState(null); // { id, text }
+    const [banner, setBanner] = useState(null); // { id, text, stickerId }
 
     const toastTimer = useRef(null);
     const toastId = useRef(0);
     const bannerTimer = useRef(null);
     const bannerQueue = useRef([]);
     const bannerActive = useRef(false);
-
-    // Saved progress lives in a ref so several updates in one event stay in order
-    const learnerRef = useRef(null);
-    const bestRunBefore = useRef(null);
-    if (learnerRef.current === null) {
-        learnerRef.current = loadLearner(learnerName, avatar);
-        bestRunBefore.current = learnerRef.current.bestRun;
-    }
 
     // Don't leave pending timers behind when the game unmounts
     useEffect(
@@ -118,6 +128,7 @@ export default function Game({
         const { learner, earned } = awardStickers(update(learnerRef.current));
         learnerRef.current = learner;
         saveLearner(learner);
+        setEquipped(learner.equipped); // a new sticker is put on straight away
         return earned;
     }
 
@@ -131,7 +142,7 @@ export default function Game({
         toastTimer.current = setTimeout(() => setToast(null), 900);
     }
 
-    // Banners (level-up, new sticker) play one after another
+    // Banners (level-up, new sticker, bonus heart) play one after another
     function nextBanner() {
         const next = bannerQueue.current.shift();
         if (!next) {
@@ -144,8 +155,8 @@ export default function Game({
         bannerTimer.current = setTimeout(nextBanner, 1800);
     }
 
-    function showBanner(text) {
-        bannerQueue.current.push({ id: Math.random(), text });
+    function showBanner(text, stickerId) {
+        bannerQueue.current.push({ id: Math.random(), text, stickerId });
         if (!bannerActive.current) nextBanner();
     }
 
@@ -193,19 +204,23 @@ export default function Game({
             const gained = attemptNo === 1 ? POINTS_FIRST_TRY : POINTS_AFTER_RETRY;
             const nextSolved = solved + 1;
             const roundDone = !infinite && nextSolved >= maxQuestions;
-            const milestone = nextSolved % perLevel === 0;
-            const levelsUp = level < MAX_LEVEL && milestone;
-            const bonusHeart = level >= MAX_LEVEL && milestone; // keeps long runs going
+            const levelsUp = level < MAX_LEVEL && nextSolved % perLevel === 0;
+            const heartMilestone = infinite && nextSolved % HEART_EVERY === 0;
             const nextLevel = levelsUp ? level + 1 : level;
             const nextClean = attemptNo === 1 ? cleanStreak + 1 : 0;
-            const refill = (levelsUp || bonusHeart) && hearts < MAX_HEARTS;
             const op = problem.operation;
+
+            // Level-ups refill a heart; no-limit games also earn one every
+            // HEART_EVERY answers. Both stop at the cap.
+            const heartGain = (levelsUp ? 1 : 0) + (heartMilestone ? 1 : 0);
+            const nextHearts = Math.min(maxHearts, hearts + heartGain);
+            const heartsAdded = nextHearts - hearts;
 
             setPoints((p) => p + gained);
             setSolved(nextSolved);
             setCleanStreak(nextClean);
             if (levelsUp) setLevel(nextLevel);
-            if (refill) setHearts((h) => Math.min(MAX_HEARTS, h + 1));
+            if (heartsAdded > 0) setHearts(nextHearts);
 
             let earned = track((l) => ({
                 ...l,
@@ -227,12 +242,13 @@ export default function Game({
                 setProblem(makeProblem(nextLevel, operationMode, problem));
                 // the result screen lists stickers, so banners only mid-game
                 if (levelsUp) showBanner(`🎉 Level ${nextLevel}! 🎉`);
-                earned.forEach((s) => showBanner(`${s.emoji} New sticker: ${s.name}!`));
+                if (heartMilestone && heartsAdded > 0) showBanner("❤️ Bonus heart!");
+                earned.forEach((s) => showBanner(`New sticker: ${s.name}!`, s.id));
             }
             if (earned.length) setEarnedList((list) => [...list, ...earned]);
 
             const praise = PRAISE[Math.floor(Math.random() * PRAISE.length)];
-            const heart = refill ? " ❤️+1" : "";
+            const heart = heartsAdded > 0 ? ` ❤️+${heartsAdded}` : "";
             flash(
                 attemptNo === 1
                     ? `${praise} +${gained}${heart}`
@@ -282,11 +298,13 @@ export default function Game({
         <div className="game">
             <GameHeader
                 name={learnerName}
-                avatar={avatar}
+                avatar={avatarId}
+                equipped={equipped}
                 level={level}
                 points={points}
                 hearts={hearts}
-                maxHearts={MAX_HEARTS}
+                maxHearts={maxHearts}
+                heartHint={infinite ? HEART_EVERY - (solved % HEART_EVERY) : null}
                 solved={solved}
                 total={maxQuestions}
                 perLevel={perLevel}
@@ -310,7 +328,13 @@ export default function Game({
             />
 
             <AnimatePresence>
-                {banner && <LevelUpBanner key={banner.id} text={banner.text} />}
+                {banner && (
+                    <LevelUpBanner
+                        key={banner.id}
+                        text={banner.text}
+                        stickerId={banner.stickerId}
+                    />
+                )}
             </AnimatePresence>
 
             <AnimatePresence>
@@ -325,7 +349,8 @@ export default function Game({
                 {result && (
                     <RoundResultModal
                         key="result"
-                        avatar={avatar}
+                        avatar={avatarId}
+                        equipped={equipped}
                         infinite={infinite}
                         completed={result.completed}
                         stars={result.stars}

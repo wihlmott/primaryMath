@@ -1,9 +1,12 @@
 import { motion } from "framer-motion";
+import Avatar from "../components/Avatar";
+import StickerIcon from "../components/StickerIcon";
 
 const TOTAL_STARS = 3;
 
 export default function RoundResultModal({
     avatar,
+    equipped,
     infinite,
     completed,
     stars,
@@ -46,8 +49,8 @@ export default function RoundResultModal({
                 initial={{ scale: 0.85 }}
                 animate={{ scale: 1 }}
             >
-                <div className="result-avatar" aria-hidden="true">
-                    {avatar}
+                <div className="result-avatar">
+                    <Avatar id={avatar} equipped={equipped} size={96} />
                 </div>
                 <h2>{title}</h2>
 
@@ -99,9 +102,7 @@ export default function RoundResultModal({
                         <ul>
                             {newStickers.map((s) => (
                                 <li key={s.id}>
-                                    <span className="sticker-emoji" aria-hidden="true">
-                                        {s.emoji}
-                                    </span>
+                                    <StickerIcon id={s.id} size={40} />
                                     {s.name}
                                 </li>
                             ))}

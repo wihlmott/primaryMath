@@ -1,10 +1,12 @@
 import { useState } from "react";
-import { LEVELS, MODES, STICKERS } from "../utils/adventure";
-import { getLearner, loadSettings } from "../utils/progress";
+import { LEVELS, MODES, SLOTS, STICKERS } from "../utils/adventure";
+import { getLearner, loadSettings, saveLearner, toggleEquipped } from "../utils/progress";
+import Avatar from "../components/Avatar";
+import StickerIcon from "../components/StickerIcon";
 import "../styles/book.css";
 
 export default function AdventureBook({ learnerName, onBack }) {
-    const [learner] = useState(() => getLearner(learnerName));
+    const [learner, setLearner] = useState(() => getLearner(learnerName));
     const [mode, setMode] = useState(() => {
         const saved = loadSettings()?.operationMode;
         return MODES.some((m) => m.id === saved) ? saved : "add";
@@ -27,6 +29,15 @@ export default function AdventureBook({ learnerName, onBack }) {
     const reached = learner.bestLevel[mode] ?? 1;
     const earnedCount = STICKERS.filter((s) => learner.stickers[s.id]).length;
 
+    // Tap an earned sticker to put it on (or take it off)
+    function toggle(sticker) {
+        const next = toggleEquipped(learner, sticker);
+        if (next !== learner) {
+            saveLearner(next);
+            setLearner(next);
+        }
+    }
+
     return (
         <div className="book">
             <button className="book-back" onClick={onBack}>
@@ -35,11 +46,9 @@ export default function AdventureBook({ learnerName, onBack }) {
 
             <h1 className="book-title">My adventure</h1>
 
-            <div className="book-player">
-                <span className="book-avatar" aria-hidden="true">
-                    {learner.avatar}
-                </span>
-                <span className="book-name">{learner.name}</span>
+            <div className="dress-preview">
+                <Avatar id={learner.avatar} equipped={learner.equipped} size={132} />
+                <div className="book-name">{learner.name}</div>
             </div>
 
             <ul className="book-stats">
@@ -61,6 +70,52 @@ export default function AdventureBook({ learnerName, onBack }) {
                         <span>best run</span>
                     </li>
                 )}
+            </ul>
+
+            <h2 className="book-heading">
+                Stickers{" "}
+                <span className="book-count">
+                    {earnedCount} of {STICKERS.length}
+                </span>
+            </h2>
+            <p className="book-hint">Tap a sticker to put it on your explorer.</p>
+            <ul className="sticker-grid">
+                {STICKERS.map((s) => {
+                    const got = Boolean(learner.stickers[s.id]);
+                    const worn = learner.equipped[s.slot] === s.id;
+                    const slotLabel = SLOTS.find((slot) => slot.id === s.slot)?.label;
+
+                    const inner = (
+                        <>
+                            <StickerIcon id={s.id} size={58} locked={!got} />
+                            <strong>{got ? s.name : "Mystery sticker"}</strong>
+                            <span>{s.how}</span>
+                            {got && (
+                                <span className={worn ? "sticker-worn" : "sticker-slot"}>
+                                    {worn ? "Wearing ✓" : slotLabel}
+                                </span>
+                            )}
+                        </>
+                    );
+
+                    return (
+                        <li key={s.id}>
+                            {got ? (
+                                <button
+                                    type="button"
+                                    className="sticker got"
+                                    aria-pressed={worn}
+                                    aria-label={`${s.name} (${slotLabel}). ${worn ? "Wearing. Tap to take off." : "Tap to wear."}`}
+                                    onClick={() => toggle(s)}
+                                >
+                                    {inner}
+                                </button>
+                            ) : (
+                                <div className="sticker">{inner}</div>
+                            )}
+                        </li>
+                    );
+                })}
             </ul>
 
             <h2 className="book-heading">The journey</h2>
@@ -99,34 +154,13 @@ export default function AdventureBook({ learnerName, onBack }) {
                             </span>
                             {state === "here" && (
                                 <span className="stop-you" aria-hidden="true">
-                                    {learner.avatar}
+                                    <Avatar id={learner.avatar} equipped={learner.equipped} size={38} />
                                 </span>
                             )}
                         </li>
                     );
                 })}
             </ol>
-
-            <h2 className="book-heading">
-                Stickers{" "}
-                <span className="book-count">
-                    {earnedCount} of {STICKERS.length}
-                </span>
-            </h2>
-            <ul className="sticker-grid">
-                {STICKERS.map((s) => {
-                    const got = Boolean(learner.stickers[s.id]);
-                    return (
-                        <li key={s.id} className={got ? "sticker got" : "sticker"}>
-                            <span className="sticker-big" aria-hidden="true">
-                                {got ? s.emoji : "❔"}
-                            </span>
-                            <strong>{got ? s.name : "Mystery sticker"}</strong>
-                            <span>{s.how}</span>
-                        </li>
-                    );
-                })}
-            </ul>
         </div>
     );
 }

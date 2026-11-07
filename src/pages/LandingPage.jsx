@@ -1,22 +1,29 @@
 import { useState } from "react";
 import {
     AVATARS,
+    BONUS_MAX_HEARTS,
+    HEART_EVERY,
     LEVELS,
     MODES,
     QUESTION_CHOICES,
+    normalizeAvatar,
 } from "../utils/adventure";
 import {
+    deleteLearner,
+    eraseAll,
     getLearner,
     listLearners,
     loadSettings,
+    resetLearner,
     saveSettings,
     upsertLearner,
 } from "../utils/progress";
+import Avatar from "../components/Avatar";
 import "../styles/landing.css";
 
 const DEFAULTS = {
     learnerName: "",
-    avatar: AVATARS[0],
+    avatar: AVATARS[0].id,
     startingLevel: 1,
     correctsPerLevel: 5,
     operationMode: "add",
@@ -29,7 +36,7 @@ function initialSettings() {
     const saved = loadSettings() ?? {};
     return {
         learnerName: typeof saved.learnerName === "string" ? saved.learnerName : DEFAULTS.learnerName,
-        avatar: AVATARS.includes(saved.avatar) ? saved.avatar : DEFAULTS.avatar,
+        avatar: normalizeAvatar(saved.avatar), // also migrates old emoji avatars
         startingLevel: LEVELS.some((l) => l.level === saved.startingLevel) ? saved.startingLevel : DEFAULTS.startingLevel,
         correctsPerLevel: Number.isInteger(saved.correctsPerLevel) && saved.correctsPerLevel >= 1 ? Math.min(saved.correctsPerLevel, 20) : DEFAULTS.correctsPerLevel,
         operationMode: MODES.some((m) => m.id === saved.operationMode) ? saved.operationMode : DEFAULTS.operationMode,
@@ -81,7 +88,7 @@ function Stepper({ value, min, max, onChange, label }) {
 
 export default function LandingPage({ onStart, onOpenBook }) {
     const [initial] = useState(initialSettings);
-    const [profiles] = useState(listLearners);
+    const [profiles, setProfiles] = useState(listLearners);
 
     const [name, setName] = useState(initial.learnerName);
     const [avatar, setAvatar] = useState(initial.avatar);
@@ -91,13 +98,49 @@ export default function LandingPage({ onStart, onOpenBook }) {
     const [showHelp, setShowHelp] = useState(initial.showHelp);
     const [maxQuestions, setMaxQuestions] = useState(initial.maxQuestions);
 
+    // Reset controls: which action is waiting for confirmation, and the result message
+    const [pending, setPending] = useState(null); // null | "reset" | "delete" | "erase"
+    const [notice, setNotice] = useState("");
+
     const trimmed = name.trim();
     const hasAdventure = Boolean(getLearner(trimmed));
 
     function pickProfile(profile) {
         setName(profile.name);
-        setAvatar(profile.avatar);
+        setAvatar(normalizeAvatar(profile.avatar));
     }
+
+    const refreshProfiles = () => setProfiles(listLearners());
+
+    function confirmPending() {
+        if (pending === "reset") {
+            resetLearner(trimmed);
+            setNotice(`${trimmed}'s progress was reset.`);
+        } else if (pending === "delete") {
+            deleteLearner(trimmed);
+            setNotice(`${trimmed} was deleted.`);
+            setName("");
+        } else if (pending === "erase") {
+            eraseAll();
+            setNotice("Everything saved on this device was erased.");
+            setName(DEFAULTS.learnerName);
+            setAvatar(DEFAULTS.avatar);
+            setStartingLevel(DEFAULTS.startingLevel);
+            setCorrectsPerLevel(DEFAULTS.correctsPerLevel);
+            setOperationMode(DEFAULTS.operationMode);
+            setShowHelp(DEFAULTS.showHelp);
+            setMaxQuestions(DEFAULTS.maxQuestions);
+        }
+        setPending(null);
+        refreshProfiles();
+    }
+
+    const pendingText = {
+        reset: `Reset ${trimmed}'s progress? Their stats, stars and stickers will be cleared. Their name and explorer stay.`,
+        delete: `Delete ${trimmed}? Their name, stats, stars and stickers will be removed from this device.`,
+        erase: "Erase everything saved on this device? This removes all players, stickers and settings.",
+    };
+    const pendingVerb = { reset: "reset", delete: "delete", erase: "erase everything" };
 
     function start(e) {
         e.preventDefault(); // so Enter in the name field starts the game too
@@ -138,7 +181,8 @@ export default function LandingPage({ onStart, onOpenBook }) {
                                     aria-pressed={p.name.toLowerCase() === trimmed.toLowerCase()}
                                     onClick={() => pickProfile(p)}
                                 >
-                                    <span aria-hidden="true">{p.avatar}</span> {p.name}
+                                    <Avatar id={p.avatar} equipped={p.equipped} size={30} />
+                                    {p.name}
                                 </button>
                             ))}
                         </div>
@@ -166,14 +210,14 @@ export default function LandingPage({ onStart, onOpenBook }) {
                     <div className="avatar-grid">
                         {AVATARS.map((a) => (
                             <RadioChoice
-                                key={a}
+                                key={a.id}
                                 name="avatar"
-                                label={`Explorer ${a}`}
-                                checked={avatar === a}
-                                onChange={() => setAvatar(a)}
+                                label={`Explorer: ${a.name}`}
+                                checked={avatar === a.id}
+                                onChange={() => setAvatar(a.id)}
                                 className="avatar-body"
                             >
-                                {a}
+                                <Avatar id={a.id} size={54} />
                             </RadioChoice>
                         ))}
                     </div>
@@ -241,7 +285,7 @@ export default function LandingPage({ onStart, onOpenBook }) {
                         </div>
                         <p className="setting-note">
                             {maxQuestions === null
-                                ? "Keeps going until the hearts run out. The player can stop any time from the Back button."
+                                ? `Keeps going until the hearts run out. Every ${HEART_EVERY} right answers earns a bonus heart (up to ${BONUS_MAX_HEARTS}). The player can stop any time from the Back button.`
                                 : "The round ends after this many right answers, with a star score."}
                         </p>
                     </fieldset>
@@ -286,9 +330,75 @@ export default function LandingPage({ onStart, onOpenBook }) {
                         <label htmlFor="showHelp">Show hints &amp; pictures</label>
                     </div>
 
-                    <p className="setting-note">
-                        Progress and stickers are saved on this device only.
-                    </p>
+                    <fieldset className="group">
+                        <legend>Saved progress</legend>
+
+                        {pending ? (
+                            <div className="confirm-box" role="alertdialog" aria-label="Confirm">
+                                <p>{pendingText[pending]}</p>
+                                <p className="confirm-warning">This can't be undone.</p>
+                                <div className="confirm-actions">
+                                    <button
+                                        type="button"
+                                        className="danger-btn"
+                                        onClick={confirmPending}
+                                    >
+                                        Yes, {pendingVerb[pending]}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="outline-btn"
+                                        onClick={() => setPending(null)}
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="reset-list">
+                                {hasAdventure && (
+                                    <>
+                                        <button
+                                            type="button"
+                                            className="outline-btn"
+                                            onClick={() => {
+                                                setNotice("");
+                                                setPending("reset");
+                                            }}
+                                        >
+                                            Reset {trimmed}'s progress
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="outline-btn"
+                                            onClick={() => {
+                                                setNotice("");
+                                                setPending("delete");
+                                            }}
+                                        >
+                                            Delete {trimmed}
+                                        </button>
+                                    </>
+                                )}
+                                <button
+                                    type="button"
+                                    className="outline-btn danger-text"
+                                    disabled={profiles.length === 0}
+                                    onClick={() => {
+                                        setNotice("");
+                                        setPending("erase");
+                                    }}
+                                >
+                                    Erase all saved data
+                                </button>
+                            </div>
+                        )}
+
+                        <p className="setting-note" aria-live="polite">
+                            {notice ||
+                                "Progress and stickers are saved on this device only. Choose a saved player above to reset or delete just them."}
+                        </p>
+                    </fieldset>
                 </details>
             </form>
         </div>

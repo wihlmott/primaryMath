@@ -479,3 +479,16 @@ Carries are positioned relative to digit columns.
   max-width: 90vw;
   text-align: center;
 }
+
+/* sticker icon + text side by side in the banner */
+.level-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.result-avatar {
+  display: flex;
+  justify-content: center;
+}

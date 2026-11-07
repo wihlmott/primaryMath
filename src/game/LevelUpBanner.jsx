@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
+import StickerIcon from "../components/StickerIcon";
 
 const EMOJI = ["⭐", "🎉", "✨", "🌟", "🎈"];
 const PIECES = 14;
@@ -8,7 +9,7 @@ const PIECES = 14;
  * Short, non-blocking celebration (level-up, new sticker). Sits above the game but below the modals,
  * and ignores pointer events so the learner can keep playing.
  */
-export default function LevelUpBanner({ text }) {
+export default function LevelUpBanner({ text, stickerId }) {
     const reduceMotion = useReducedMotion();
 
     // Random burst directions, chosen once per banner
@@ -60,7 +61,8 @@ export default function LevelUpBanner({ text }) {
                     animate={{ scale: 1 }}
                     transition={{ type: "spring", stiffness: 260, damping: 14 }}
                 >
-                    {text}
+                    {stickerId && <StickerIcon id={stickerId} size={38} />}
+                    <span>{text}</span>
                 </motion.div>
             </div>
         </motion.div>

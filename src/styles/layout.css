@@ -82,3 +82,16 @@
   color: #4b5563;
   text-align: center;
 }
+
+/* avatar next to the name */
+.game-header .name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* no-limit games: countdown to the next bonus heart */
+.heart-hint {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
