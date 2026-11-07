@@ -12,7 +12,7 @@
 
    SUBTRACTION
    L1: 1 digit - 1 digit, no borrow
-   L2: 1 digit - 1 digit, no borrow
+   L2: 2 digit - 1 digit, no borrow
    L3: 2 digit - 2 digit, no borrow
    L4: 2 digit - 2 digit, borrow
    L5: 2/3 digit - 2/3 digit, borrow optional
@@ -29,6 +29,14 @@
    ========================================================= */
 
 export function generateProblem(level, operationMode) {
+  let problem;
+  do {
+    problem = buildProblem(level, operationMode);
+  } while (problem.operation === "-" && problem.answer === 0);
+  return problem;
+}
+
+function buildProblem(level, operationMode) {
   const operation = chooseOperation(operationMode);
 
   let a;
@@ -349,4 +357,57 @@ function randomBetween(min, max) {
 
 function randomFrom(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
+}
+
+/* =========================================================
+   Hints
+   ---------------------------------------------------------
+   What a learner would write above the columns.
+   `col` counts from the right: 0 = ones, 1 = tens, 2 = hundreds...
+   kind "carry":  a number carried INTO column `col`
+   kind "borrow": the new top digit to use in column `col`
+                  after borrowing (e.g. 52 - 38: ones 2 -> 12, tens 5 -> 4)
+   ========================================================= */
+
+export function getHints({ a, b, operation }) {
+  if (operation === "+") {
+    return getCarryColumns(a, b).map((col) => ({ col, value: 1, kind: "carry" }));
+  }
+  if (operation === "×") return getMultiplicationCarries(a, b);
+  if (operation === "-") return getBorrowHints(a, b);
+  return [];
+}
+
+function getMultiplicationCarries(a, b) {
+  const digits = String(a).split("").map(Number).reverse(); // ones first
+  const hints = [];
+  let carry = 0;
+
+  digits.forEach((d, i) => {
+    const product = d * b + carry;
+    carry = Math.floor(product / 10);
+    if (carry > 0) hints.push({ col: i + 1, value: carry, kind: "carry" });
+  });
+
+  return hints;
+}
+
+function getBorrowHints(a, b) {
+  const top = String(a).split("").map(Number).reverse();
+  const bottom = String(b).split("").map(Number).reverse();
+  const hints = [];
+  let borrowedFromMe = 0; // 1 if the column to my right borrowed from me
+
+  for (let i = 0; i < top.length; i++) {
+    const current = top[i] - borrowedFromMe;
+    const needsBorrow = current < (bottom[i] || 0);
+    const newTop = current + (needsBorrow ? 10 : 0);
+
+    if (borrowedFromMe || needsBorrow) {
+      hints.push({ col: i, value: newTop, kind: "borrow" });
+    }
+    borrowedFromMe = needsBorrow ? 1 : 0;
+  }
+
+  return hints;
 }

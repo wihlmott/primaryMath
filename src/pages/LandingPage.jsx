@@ -4,13 +4,29 @@ import "../styles/landing.css";
 export default function LandingPage({ onStart }) {
     const [name, setName] = useState("");
     const [startingLevel, setStartingLevel] = useState(1);
-    const [correctsPerLevel, setCorrectsPerLevel] = useState(5);
+    const [correctsPerLevel, setCorrectsPerLevel] = useState("5");
     const [operationMode, setOperationMode] = useState("add");
-    const [showCarryBorrow, setShowCarryBorrow] = useState(true);
+    const [showHelp, setShowHelp] = useState(true);
+
+    // The field can be empty while typing, but the game always gets a
+    // whole number >= 1.
+    const perLevel = Math.max(1, Math.floor(Number(correctsPerLevel)) || 1);
+
+    function start(e) {
+        e.preventDefault(); // so Enter in any field starts the game too
+        if (!name.trim()) return;
+        onStart({
+            learnerName: name.trim(),
+            startingLevel,
+            correctsPerLevel: perLevel,
+            operationMode,
+            showHelp,
+        });
+    }
 
     return (
         <div className="landing">
-            <div className="card">
+            <form className="card" onSubmit={start}>
                 <h1>Math Adventure</h1>
 
                 {/* Learner name */}
@@ -48,9 +64,8 @@ export default function LandingPage({ onStart }) {
                         type="number"
                         min={1}
                         value={correctsPerLevel}
-                        onChange={(e) =>
-                            setCorrectsPerLevel(Number(e.target.value))
-                        }
+                        onChange={(e) => setCorrectsPerLevel(e.target.value)}
+                        onBlur={() => setCorrectsPerLevel(String(perLevel))}
                     />
                 </label>
 
@@ -105,33 +120,22 @@ export default function LandingPage({ onStart }) {
                     </div>
                 </fieldset>
 
-                {/* Carry / borrow toggle */}
+                {/* Hints + pictures toggle */}
                 <div className="checkbox-row">
                     <input
                         type="checkbox"
-                        id="carryHelp"
-                        checked={showCarryBorrow}
-                        onChange={(e) => setShowCarryBorrow(e.target.checked)}
+                        id="showHelp"
+                        checked={showHelp}
+                        onChange={(e) => setShowHelp(e.target.checked)}
                     />
-                    <label htmlFor="carryHelp">Show Carry / Borrow Help</label>
+                    <label htmlFor="showHelp">Show hints &amp; pictures</label>
                 </div>
 
                 {/* Start button */}
-                <button
-                    disabled={!name.trim()}
-                    onClick={() =>
-                        onStart({
-                            learnerName: name.trim(),
-                            startingLevel,
-                            correctsPerLevel,
-                            operationMode,
-                            showCarryBorrow,
-                        })
-                    }
-                >
+                <button type="submit" disabled={!name.trim()}>
                     Start Game
                 </button>
-            </div>
+            </form>
         </div>
     );
 }
