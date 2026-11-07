@@ -1,6 +1,10 @@
 import { motion } from "framer-motion";
 
-export default function ConfirmLeaveModal({ onStay, onLeave }) {
+/**
+ * `onFinish` is only passed in no-limit games, where a round has no natural
+ * end: it lets the learner stop and see their score.
+ */
+export default function ConfirmLeaveModal({ onStay, onLeave, onFinish }) {
     return (
         <motion.div
             className="overlay"
@@ -12,17 +16,24 @@ export default function ConfirmLeaveModal({ onStay, onLeave }) {
                 className="modal"
                 role="dialog"
                 aria-modal="true"
-                aria-label="Leave the game?"
+                aria-label={onFinish ? "Stop playing?" : "Leave the game?"}
                 initial={{ scale: 0.85 }}
                 animate={{ scale: 1 }}
             >
-                <h2>Leave the game?</h2>
-                <p>You will lose your progress in this round.</p>
+                <h2>{onFinish ? "Stop playing?" : "Leave the game?"}</h2>
+                <p>
+                    {onFinish
+                        ? "Finish to see your score, or leave without it."
+                        : "You will lose this round's stars."}
+                </p>
 
                 <div className="modal-actions">
                     <button className="primary" onClick={onStay}>
                         Keep playing
                     </button>
+                    {onFinish && (
+                        <button onClick={onFinish}>Finish &amp; see my score</button>
+                    )}
                     <button onClick={onLeave}>Leave</button>
                 </div>
             </motion.div>

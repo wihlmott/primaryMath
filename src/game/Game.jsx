@@ -9,12 +9,12 @@ import LevelUpBanner from "./LevelUpBanner";
 import ScoreToast from "./ScoreToast";
 
 import { generateProblem } from "../utils/mathEngine";
+import { MAX_LEVEL } from "../utils/adventure";
+import { awardStickers, loadLearner, saveLearner } from "../utils/progress";
 import "../styles/game.css";
 
 /* ---------- Tuning knobs ---------- */
-const PROBLEMS_PER_ROUND = 10;
 const MAX_HEARTS = 3;
-const MAX_LEVEL = 5; // the engine has no harder problems beyond this
 const POINTS_FIRST_TRY = 10;
 const POINTS_AFTER_RETRY = 5;
 
@@ -43,25 +43,30 @@ function makeProblem(level, operationMode, previous) {
 }
 
 /**
- * 3 stars: finished with at most 1 mistake
- * 2 stars: finished with at most 3 mistakes
+ * Stars for a round with a question limit. Thresholds scale with the length:
+ * 3 stars: at most ~10% mistakes (min 1)
+ * 2 stars: at most ~30% mistakes (min 3)
  * 1 star:  finished with more, or ran out of hearts (everyone gets one)
  */
-function starsFor(completed, mistakes) {
+function starsFor(completed, mistakes, total) {
     if (!completed) return 1;
-    if (mistakes <= 1) return 3;
-    if (mistakes <= 3) return 2;
+    if (mistakes <= Math.max(1, Math.floor(total * 0.1))) return 3;
+    if (mistakes <= Math.max(3, Math.floor(total * 0.3))) return 2;
     return 1;
 }
 
 export default function Game({
     learnerName,
+    avatar,
     startingLevel,
     correctsPerLevel,
     operationMode,
     showHelp,
+    maxQuestions = null, // number, or null for "no limit"
     onExitGame,
 }) {
+    const infinite = maxQuestions == null;
+
     // An emptied number field gives 0 (or NaN), which would break `%` and
     // stop level-ups. Always use a whole number >= 1.
     const perLevel = Math.max(1, Math.floor(Number(correctsPerLevel)) || 1);
@@ -71,26 +76,52 @@ export default function Game({
     const [hearts, setHearts] = useState(MAX_HEARTS);
     const [solved, setSolved] = useState(0); // correct answers this round
     const [mistakes, setMistakes] = useState(0); // wrong tries this round
+    const [cleanStreak, setCleanStreak] = useState(0); // right first time, in a row
     const [problem, setProblem] = useState(() =>
         makeProblem(startingLevel, operationMode),
     );
-    const [result, setResult] = useState(null); // null | { completed: boolean }
+    const [result, setResult] = useState(null); // null | { completed, stars }
     const [confirmLeave, setConfirmLeave] = useState(false);
+    const [earnedList, setEarnedList] = useState([]); // stickers won this round
 
     const [toast, setToast] = useState(null);
-    const [levelUp, setLevelUp] = useState(null); // { id, level }
+    const [banner, setBanner] = useState(null); // { id, text }
+
     const toastTimer = useRef(null);
     const toastId = useRef(0);
-    const levelUpTimer = useRef(null);
+    const bannerTimer = useRef(null);
+    const bannerQueue = useRef([]);
+    const bannerActive = useRef(false);
+
+    // Saved progress lives in a ref so several updates in one event stay in order
+    const learnerRef = useRef(null);
+    const bestRunBefore = useRef(null);
+    if (learnerRef.current === null) {
+        learnerRef.current = loadLearner(learnerName, avatar);
+        bestRunBefore.current = learnerRef.current.bestRun;
+    }
 
     // Don't leave pending timers behind when the game unmounts
     useEffect(
         () => () => {
             clearTimeout(toastTimer.current);
-            clearTimeout(levelUpTimer.current);
+            clearTimeout(bannerTimer.current);
         },
         [],
     );
+
+    /* ---------- Saved progress ---------- */
+
+    // `update` returns the changed learner; stickers are awarded and saved.
+    // Returns the stickers earned by this change.
+    function track(update) {
+        const { learner, earned } = awardStickers(update(learnerRef.current));
+        learnerRef.current = learner;
+        saveLearner(learner);
+        return earned;
+    }
+
+    /* ---------- Toasts and banners ---------- */
 
     function flash(message, type) {
         // Cancel the previous timer so it can't dismiss this newer toast early
@@ -100,10 +131,57 @@ export default function Game({
         toastTimer.current = setTimeout(() => setToast(null), 900);
     }
 
-    function celebrate(newLevel) {
-        clearTimeout(levelUpTimer.current);
-        setLevelUp({ id: Math.random(), level: newLevel });
-        levelUpTimer.current = setTimeout(() => setLevelUp(null), 1800);
+    // Banners (level-up, new sticker) play one after another
+    function nextBanner() {
+        const next = bannerQueue.current.shift();
+        if (!next) {
+            bannerActive.current = false;
+            setBanner(null);
+            return;
+        }
+        bannerActive.current = true;
+        setBanner(next);
+        bannerTimer.current = setTimeout(nextBanner, 1800);
+    }
+
+    function showBanner(text) {
+        bannerQueue.current.push({ id: Math.random(), text });
+        if (!bannerActive.current) nextBanner();
+    }
+
+    function clearBanners() {
+        clearTimeout(bannerTimer.current);
+        bannerQueue.current = [];
+        bannerActive.current = false;
+        setBanner(null);
+    }
+
+    /* ---------- Round end ---------- */
+
+    // Records the round and opens the result screen.
+    // Returns stickers earned by finishing.
+    function endRound(completed, mistakesNow) {
+        const stars = infinite ? 0 : starsFor(completed, mistakesNow, maxQuestions);
+
+        const earned = track((l) => ({
+            ...l,
+            roundsPlayed: l.roundsPlayed + 1,
+            totalStars: l.totalStars + stars,
+            perfectRounds:
+                l.perfectRounds +
+                (completed && !infinite && mistakesNow === 0 ? 1 : 0),
+            lastPlayed: Date.now(),
+        }));
+
+        setResult({ completed, stars });
+        return earned;
+    }
+
+    // "Finish and see my score" in a no-limit game
+    function finishNow() {
+        setConfirmLeave(false);
+        const earned = endRound(false, mistakes);
+        if (earned.length) setEarnedList((list) => [...list, ...earned]);
     }
 
     // Returns true if the answer was right. All state updates are computed
@@ -114,42 +192,65 @@ export default function Game({
         if (value === problem.answer) {
             const gained = attemptNo === 1 ? POINTS_FIRST_TRY : POINTS_AFTER_RETRY;
             const nextSolved = solved + 1;
-            const roundDone = nextSolved >= PROBLEMS_PER_ROUND;
-            const levelsUp = level < MAX_LEVEL && nextSolved % perLevel === 0;
+            const roundDone = !infinite && nextSolved >= maxQuestions;
+            const milestone = nextSolved % perLevel === 0;
+            const levelsUp = level < MAX_LEVEL && milestone;
+            const bonusHeart = level >= MAX_LEVEL && milestone; // keeps long runs going
             const nextLevel = levelsUp ? level + 1 : level;
+            const nextClean = attemptNo === 1 ? cleanStreak + 1 : 0;
+            const refill = (levelsUp || bonusHeart) && hearts < MAX_HEARTS;
+            const op = problem.operation;
 
             setPoints((p) => p + gained);
             setSolved(nextSolved);
+            setCleanStreak(nextClean);
+            if (levelsUp) setLevel(nextLevel);
+            if (refill) setHearts((h) => Math.min(MAX_HEARTS, h + 1));
 
-            if (levelsUp) {
-                setLevel(nextLevel);
-                // Level-up refills one heart
-                setHearts((h) => Math.min(MAX_HEARTS, h + 1));
-                if (!roundDone) celebrate(nextLevel);
-            }
+            let earned = track((l) => ({
+                ...l,
+                totalSolved: l.totalSolved + 1,
+                solvedByOp: { ...l.solvedByOp, [op]: (l.solvedByOp[op] || 0) + 1 },
+                retriesFixed: l.retriesFixed + (attemptNo > 1 ? 1 : 0),
+                bestCleanStreak: Math.max(l.bestCleanStreak, nextClean),
+                bestRun: infinite ? Math.max(l.bestRun, nextSolved) : l.bestRun,
+                bestLevel: {
+                    ...l.bestLevel,
+                    [operationMode]: Math.max(l.bestLevel[operationMode] || 1, nextLevel),
+                },
+                lastPlayed: Date.now(),
+            }));
 
             if (roundDone) {
-                setResult({ completed: true });
+                earned = [...earned, ...endRound(true, mistakes)];
             } else {
                 setProblem(makeProblem(nextLevel, operationMode, problem));
+                // the result screen lists stickers, so banners only mid-game
+                if (levelsUp) showBanner(`🎉 Level ${nextLevel}! 🎉`);
+                earned.forEach((s) => showBanner(`${s.emoji} New sticker: ${s.name}!`));
             }
+            if (earned.length) setEarnedList((list) => [...list, ...earned]);
 
             const praise = PRAISE[Math.floor(Math.random() * PRAISE.length)];
+            const heart = refill ? " ❤️+1" : "";
             flash(
                 attemptNo === 1
-                    ? `${praise} +${gained}`
-                    : `Nice fixing! +${gained}`,
+                    ? `${praise} +${gained}${heart}`
+                    : `Nice fixing! +${gained}${heart}`,
                 "success",
             );
             return true;
         }
 
         const nextHearts = hearts - 1;
+        const nextMistakes = mistakes + 1;
         setHearts(nextHearts);
-        setMistakes((m) => m + 1);
+        setMistakes(nextMistakes);
+        setCleanStreak(0);
 
         if (nextHearts <= 0) {
-            setResult({ completed: false });
+            const earned = endRound(false, nextMistakes);
+            if (earned.length) setEarnedList((list) => [...list, ...earned]);
         } else {
             flash(
                 attemptNo === 1
@@ -162,27 +263,32 @@ export default function Game({
     }
 
     function restart() {
-        clearTimeout(levelUpTimer.current);
+        clearBanners();
         setLevel(startingLevel);
         setPoints(0);
         setHearts(MAX_HEARTS);
         setSolved(0);
         setMistakes(0);
+        setCleanStreak(0);
         setResult(null);
-        setLevelUp(null);
+        setEarnedList([]);
+        bestRunBefore.current = learnerRef.current.bestRun;
         setProblem(makeProblem(startingLevel, operationMode, problem));
     }
+
+    const isNewBest = infinite && solved > 0 && solved > bestRunBefore.current;
 
     return (
         <div className="game">
             <GameHeader
                 name={learnerName}
+                avatar={avatar}
                 level={level}
                 points={points}
                 hearts={hearts}
                 maxHearts={MAX_HEARTS}
                 solved={solved}
-                total={PROBLEMS_PER_ROUND}
+                total={maxQuestions}
                 perLevel={perLevel}
                 atMaxLevel={level >= MAX_LEVEL}
                 onBack={() => setConfirmLeave(true)}
@@ -204,9 +310,7 @@ export default function Game({
             />
 
             <AnimatePresence>
-                {levelUp && (
-                    <LevelUpBanner key={levelUp.id} level={levelUp.level} />
-                )}
+                {banner && <LevelUpBanner key={banner.id} text={banner.text} />}
             </AnimatePresence>
 
             <AnimatePresence>
@@ -215,17 +319,23 @@ export default function Game({
                         key="leave"
                         onStay={() => setConfirmLeave(false)}
                         onLeave={onExitGame}
+                        onFinish={infinite && solved > 0 ? finishNow : undefined}
                     />
                 )}
                 {result && (
                     <RoundResultModal
                         key="result"
+                        avatar={avatar}
+                        infinite={infinite}
                         completed={result.completed}
-                        stars={starsFor(result.completed, mistakes)}
+                        stars={result.stars}
                         solved={solved}
-                        total={PROBLEMS_PER_ROUND}
+                        total={maxQuestions}
                         points={points}
                         level={level}
+                        bestRun={Math.max(bestRunBefore.current, solved)}
+                        isNewBest={isNewBest}
+                        newStickers={earnedList}
                         onPlayAgain={restart}
                         onExit={onExitGame}
                     />

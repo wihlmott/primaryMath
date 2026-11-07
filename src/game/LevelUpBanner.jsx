@@ -5,10 +5,10 @@ const EMOJI = ["⭐", "🎉", "✨", "🌟", "🎈"];
 const PIECES = 14;
 
 /**
- * Short, non-blocking celebration. Sits above the game but below the modals,
+ * Short, non-blocking celebration (level-up, new sticker). Sits above the game but below the modals,
  * and ignores pointer events so the learner can keep playing.
  */
-export default function LevelUpBanner({ level }) {
+export default function LevelUpBanner({ text }) {
     const reduceMotion = useReducedMotion();
 
     // Random burst directions, chosen once per banner
@@ -60,7 +60,7 @@ export default function LevelUpBanner({ level }) {
                     animate={{ scale: 1 }}
                     transition={{ type: "spring", stiffness: 260, damping: 14 }}
                 >
-                    🎉 Level {level}! 🎉
+                    {text}
                 </motion.div>
             </div>
         </motion.div>

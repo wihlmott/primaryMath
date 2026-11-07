@@ -1,22 +1,30 @@
+/* ======================================================
+   Landing page
+   ====================================================== */
+
 .landing {
   min-height: 100vh;
   display: flex;
   justify-content: center;
-  align-items: center;
-  background: #f2f2f2;
+  align-items: flex-start;
+  padding: 1.25rem 1rem 2.5rem;
+
+  background: linear-gradient(180deg, #dff3ff 0%, #fff8e1 100%);
+  font-family: ui-rounded, "SF Pro Rounded", "Nunito", system-ui, -apple-system,
+    "Segoe UI", sans-serif;
 }
 
-.card {
-  background: white;
-  padding: 2rem;
-  border-radius: 18px;
-  width: 360px;
+.landing-card {
+  width: 100%;
+  max-width: 400px;
+  padding: 1.5rem 1.25rem 1.25rem;
 
+  background: white;
+  border-radius: 22px;
   box-shadow:
     0 10px 25px rgba(0, 0, 0, 0.08),
     0 2px 6px rgba(0, 0, 0, 0.05);
 
-  backdrop-filter: blur(6px);
   animation: fadeUp 0.35s ease-out;
 }
 
@@ -31,115 +39,285 @@
   }
 }
 
-.card h1 {
+@media (prefers-reduced-motion: reduce) {
+  .landing-card {
+    animation: none;
+  }
+}
+
+.landing-title {
+  margin: 0;
   text-align: center;
-  font-size: 1.8rem;
+  font-size: 2rem;
   font-weight: 800;
   letter-spacing: -0.02em;
-  margin-bottom: 1.5rem;
-  text-shadow: 2px 2px 8px rgba(0, 0, 0, .2)
 }
 
-/* ----- Form layout ----- */
+.tagline {
+  margin: 0.3rem 0 0;
+  text-align: center;
+  color: #4b5563;
+}
 
-.card label {
+/* ----- Groups (labels + controls) ----- */
+
+.group {
+  margin: 1.1rem 0 0;
+  padding: 0;
+  border: 0;
+  min-width: 0; /* lets fieldsets shrink inside the card */
+}
+
+.group legend,
+.group-label {
   display: block;
-  font-size: 0.9rem;
-  margin-bottom: 0.25rem;
-}
-
-.card input[type="text"],
-.card input[type="number"],
-.card select {
-  width: 100%;
-  padding: 0.4rem;
-  margin-bottom: 1rem;
-  font-size: 0.9rem
-}
-
-/* ----- Radio group ----- */
-.radio-group {
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 0.75rem;
-  margin-bottom: 1rem;
-  background: #f9fafb;
-}
-
-.radio-group legend {
-  font-size: 0.85rem;
+  margin: 0 0 0.45rem;
+  padding: 0;
+  font-size: 0.95rem;
   font-weight: 700;
-  padding: 0 0.4rem;
-  color: #374151;
+  color: #1f2937;
 }
 
-/* Container for options */
-.radio-options {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.5rem;
-  margin-top: 0.3rem;
+.name-input {
+  width: 100%;
+  padding: 0.7rem 0.8rem;
+  font-size: 1.1rem;
+  border: 2px solid #cbd5e1;
+  border-radius: 12px;
 }
 
-/* Each option = one clean row */
-.radio-options label {
+/* ----- Saved players ----- */
+
+.profiles {
   display: flex;
-  align-items: center;
-  gap: 0.6rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
 
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: #111827;
+.profile-chip {
+  margin: 0;
+  padding: 0.4rem 0.85rem;
+  font-size: 1rem;
+  font-weight: 600;
+  background: #f1f5f9;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  box-shadow: none;
+}
 
+.profile-chip[aria-pressed="true"] {
+  background: #dbeafe;
+  border-color: #2563eb;
+}
+
+/* ----- Radio inputs that look like buttons ----- */
+
+.choice {
+  position: relative;
+  display: block;
   cursor: pointer;
 }
 
-/* Normalize radio appearance */
-.radio-options input[type="radio"] {
-  width: 1rem;
-  height: 1rem;
+/* the real radio stays in the page (keyboard + screen readers), just unseen */
+.choice input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
   margin: 0;
-  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
 }
-/* ----- Checkbox ----- */
 
-.checkbox {
+.choice-body {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
-  margin-bottom: 1.2rem;
+  justify-content: center;
+  border: 3px solid #e5e7eb;
+  border-radius: 14px;
+  background: #f8fafc;
+  color: #111827;
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
+
+.choice input:checked + .choice-body {
+  border-color: #2563eb;
+  background: #dbeafe;
+}
+
+.choice input:focus-visible + .choice-body {
+  outline: 3px solid #1d4ed8;
+  outline-offset: 2px;
+}
+
+/* ----- Avatars ----- */
+
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+}
+
+.avatar-body {
+  padding: 0.35rem 0;
+  font-size: 2rem;
+  line-height: 1.2;
+}
+
+/* ----- Operation tiles ----- */
+
+.op-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.6rem;
+}
+
+.op-body {
+  flex-direction: column;
+  gap: 0.15rem;
+  min-height: 4.4rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.op-icon {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+/* ----- Start ----- */
+
+.start-btn {
+  display: block;
+  width: 100%;
+  margin: 1.4rem 0 0;
+  padding: 0.95rem;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: white;
+  background: linear-gradient(180deg, #22c55e, #16a34a);
+  border-radius: 16px;
+}
+
+.start-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.start-hint {
+  margin: 0.5rem 0 0;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+.link-btn {
+  display: block;
+  margin: 0.7rem auto 0;
+  padding: 0.3rem 0.6rem;
+  background: none;
+  box-shadow: none;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1e40af;
+  text-decoration: underline;
+}
+
+/* ----- Grown-up settings ----- */
+
+.grownups {
+  margin-top: 1.4rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.grownups summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: #374151;
+}
+
+.summary-hint {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.chip-body {
+  padding: 0.45rem 0.9rem;
+  border-width: 2px;
+  border-radius: 999px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.setting-note {
+  margin: 0.5rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.35;
+  color: #4b5563;
+}
+
+.grownups select {
+  width: 100%;
+  padding: 0.5rem;
+  font-size: 1rem;
+}
+
+/* − value + */
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.stepper button {
+  width: 2.6rem;
+  height: 2.6rem;
+  margin: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: #f1f5f9;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.stepper button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.stepper output {
+  min-width: 2.5rem;
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 800;
+}
+
 /* ----- Checkbox row ----- */
 
 .checkbox-row {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-
-  margin-bottom: 1.2rem;
-
-  font-size: 0.9rem;
-  font-weight: 500;
+  margin-top: 1.1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
   color: #111827;
 }
 
-/* Normalize checkbox appearance */
 .checkbox-row input[type="checkbox"] {
-  width: 1rem;
-  height: 1rem;
+  width: 1.1rem;
+  height: 1.1rem;
   margin: 0;
   flex-shrink: 0;
-}
-
-/* ----- Button ----- */
-
-.card button {
-  width: 100%;
-  padding: 0.5rem;
-  font-size: 1rem;
-}
-
-.card button:disabled {
-  opacity: 0.5;
 }

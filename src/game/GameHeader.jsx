@@ -1,20 +1,23 @@
 import { motion } from "framer-motion";
+import { LEVELS } from "../utils/adventure";
 import "../styles/layout.css";
 
 export default function GameHeader({
     name,
+    avatar,
     level,
     points,
     hearts,
     maxHearts,
     solved,
-    total,
+    total, // number, or null when there is no question limit
     perLevel,
     atMaxLevel,
     onBack,
 }) {
     const intoLevel = solved % perLevel;
     const pct = atMaxLevel ? 100 : (intoLevel / perLevel) * 100;
+    const island = LEVELS[level - 1];
 
     return (
         <header className="game-header">
@@ -25,8 +28,12 @@ export default function GameHeader({
             <div className="title">Math Adventure</div>
 
             <div className="status">
-                <span className="name">{name}</span>
-                <span>Level {level}</span>
+                <span className="name">
+                    {avatar} {name}
+                </span>
+                <span>
+                    Level {level} {island?.emoji}
+                </span>
                 <span>{points} pts</span>
             </div>
 
@@ -51,7 +58,9 @@ export default function GameHeader({
                 </div>
 
                 <span>
-                    Problem {Math.min(solved + 1, total)} of {total}
+                    {total == null
+                        ? `Problem ${solved + 1} · ∞`
+                        : `Problem ${Math.min(solved + 1, total)} of ${total}`}
                 </span>
             </div>
 
@@ -71,7 +80,7 @@ export default function GameHeader({
             </div>
             <div className="level-progress-label">
                 {atMaxLevel
-                    ? "Top level! 🏆"
+                    ? `Top level! 🏆 Every ${perLevel} right earns a heart`
                     : `${intoLevel} of ${perLevel} to Level ${level + 1}`}
             </div>
         </header>

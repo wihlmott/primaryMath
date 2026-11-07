@@ -1,0 +1,248 @@
+/* ======================================================
+   Adventure book (journey map + stickers)
+   ====================================================== */
+
+.book {
+  min-height: 100vh;
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 1rem 1rem 2.5rem;
+
+  background: linear-gradient(180deg, #dff3ff 0%, #fff8e1 100%);
+  font-family: ui-rounded, "SF Pro Rounded", "Nunito", system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+  color: #111827;
+}
+
+.book-back {
+  margin: 0;
+  padding: 0.4rem 0.8rem;
+  background: white;
+  font-size: 0.95rem;
+  font-weight: 700;
+  border-radius: 999px;
+}
+
+.book-title {
+  margin: 0.8rem 0 0.4rem;
+  text-align: center;
+  font-size: 1.8rem;
+  font-weight: 800;
+}
+
+.book-empty {
+  text-align: center;
+  color: #4b5563;
+}
+
+.book-player {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.book-avatar {
+  font-size: 2.6rem;
+  line-height: 1;
+}
+
+.book-name {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+/* ----- Stats ----- */
+
+.book-stats {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.9rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.book-stats li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 4.2rem;
+  padding: 0.45rem 0.7rem;
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.book-stats strong {
+  font-size: 1.4rem;
+}
+
+.book-stats span {
+  font-size: 0.8rem;
+  color: #4b5563;
+}
+
+.book-heading {
+  margin: 1.6rem 0 0.6rem;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+
+.book-count {
+  margin-left: 0.3rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+/* ----- Journey tabs ----- */
+
+.book-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.book-tabs button {
+  margin: 0;
+  padding: 0.4rem 0.8rem;
+  background: white;
+  border: 2px solid transparent;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.book-tabs button[aria-pressed="true"] {
+  background: #dbeafe;
+  border-color: #2563eb;
+}
+
+/* ----- Map: level 1 at the bottom, path climbs upward ----- */
+
+.map {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.7rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stop {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  width: 88%;
+  padding: 0.6rem 0.8rem;
+  background: white;
+  border: 3px solid #e5e7eb;
+  border-radius: 16px;
+}
+
+/* zig-zag */
+.stop:nth-child(even) {
+  align-self: flex-end;
+}
+
+.stop-node {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  font-size: 1.7rem;
+  background: #f1f5f9;
+  border-radius: 50%;
+}
+
+.stop-text {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+  color: #4b5563;
+}
+
+.stop-text strong {
+  font-size: 1rem;
+  color: #111827;
+}
+
+.stop.done {
+  border-color: #16a34a;
+}
+
+.stop.done .stop-node {
+  background: #dcfce7;
+}
+
+.stop.here {
+  border-color: #2563eb;
+  background: #eff6ff;
+}
+
+.stop.here .stop-node {
+  background: #dbeafe;
+}
+
+.stop.locked {
+  opacity: 0.65;
+}
+
+/* the explorer standing on the current stop */
+.stop-you {
+  position: absolute;
+  right: 0.6rem;
+  top: -0.9rem;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+/* ----- Stickers ----- */
+
+.sticker-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sticker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.7rem 0.5rem;
+  text-align: center;
+  background: white;
+  border: 2px dashed #cbd5e1;
+  border-radius: 14px;
+  font-size: 0.8rem;
+  color: #4b5563;
+}
+
+.sticker strong {
+  font-size: 0.95rem;
+  color: #111827;
+}
+
+.sticker-big {
+  font-size: 2.2rem;
+  line-height: 1.1;
+}
+
+.sticker:not(.got) .sticker-big {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
+.sticker.got {
+  background: #fef9c3;
+  border: 2px solid #facc15;
+}

@@ -427,3 +427,55 @@ Carries are positioned relative to digit columns.
   opacity: 0.3;
   filter: grayscale(1);
 }
+
+/* ======================================================
+   Result screen: avatar + new stickers
+   ====================================================== */
+
+.modal {
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.result-avatar {
+  font-size: 3rem;
+  line-height: 1;
+  margin-bottom: 0.2rem;
+}
+
+.new-stickers {
+  margin-top: 0.9rem;
+  padding: 0.6rem;
+  border-radius: 12px;
+  background: #fef9c3;
+}
+
+.new-stickers-title {
+  margin-bottom: 0.3rem;
+  font-weight: 800;
+  color: #854d0e;
+}
+
+.new-stickers ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.new-stickers li {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-weight: 600;
+}
+
+.sticker-emoji {
+  font-size: 1.5rem;
+}
+
+/* long banner text (e.g. a sticker name) wraps instead of overflowing */
+.level-banner {
+  max-width: 90vw;
+  text-align: center;
+}
