@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { LEVELS, MODES, SLOTS, STICKERS } from "../utils/adventure";
 import { getLearner, loadSettings, saveLearner, toggleEquipped } from "../utils/progress";
+import { describeLevel, ladderLength } from "../utils/mathEngine";
 import Avatar from "../components/Avatar";
 import StickerIcon from "../components/StickerIcon";
 import "../styles/book.css";
@@ -134,7 +135,7 @@ export default function AdventureBook({ learnerName, onBack }) {
 
             {/* Level 1 is at the bottom: the path climbs upward */}
             <ol className="map">
-                {LEVELS.map((l) => {
+                {LEVELS.slice(0, ladderLength(mode)).map((l) => {
                     const state =
                         l.level < reached ? "done" : l.level === reached ? "here" : "locked";
                     return (
@@ -146,6 +147,7 @@ export default function AdventureBook({ learnerName, onBack }) {
                                 <strong>
                                     Level {l.level}: {l.name}
                                 </strong>
+                                <span className="stop-desc">{describeLevel(mode, l.level)}</span>
                                 <span>
                                     {state === "done" && "Passed ✓"}
                                     {state === "here" && "You are here!"}

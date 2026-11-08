@@ -492,3 +492,293 @@ Carries are positioned relative to digit columns.
   display: flex;
   justify-content: center;
 }
+
+/* ======================================================
+   Number games: missing number, bonds, skip counting, compare
+   ====================================================== */
+
+.number-problem,
+.compare-problem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+.stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 9.5rem;
+}
+
+/* ----- the box a learner types into ----- */
+
+.answer-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.4rem;
+  height: 3.4rem;
+  padding: 0 0.6rem;
+  border: 3px dashed #2563eb;
+  border-radius: 12px;
+  background: #eff6ff;
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1e40af;
+}
+
+.answer-box.empty {
+  color: #93c5fd;
+}
+
+.answer-box.wrong {
+  border-color: #dc2626;
+  background: #fef2f2;
+  animation: shake 0.35s;
+}
+
+/* after two wrong tries the answer shows as an orange hint */
+.answer-box.revealed {
+  color: #d97706;
+  border-color: #f59e0b;
+}
+
+/* ----- missing number: 7 + [?] = 15 ----- */
+
+.equation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 2.3rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.eq-op {
+  color: #4b5563;
+}
+
+/* ----- number bond ----- */
+
+.bond {
+  position: relative;
+  width: 15rem;
+  height: 9.5rem;
+}
+
+.bond-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.bond-lines line {
+  stroke: #93c5fd;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.bond-whole {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.bond-parts {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: flex;
+  justify-content: space-around;
+}
+
+.bond-circle {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.6rem;
+  height: 3.6rem;
+  padding: 0 0.2rem;
+  border: 3px solid #2563eb;
+  border-radius: 999px;
+  background: white;
+  font-size: 1.7rem;
+  font-weight: 800;
+}
+
+.bond-circle.blank {
+  border-style: dashed;
+  background: #eff6ff;
+}
+
+/* the circle is the box, so the answer box inside it drops its own frame */
+.bond-circle .answer-box {
+  min-width: 0;
+  height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  animation: none;
+}
+
+.bond-circle .answer-box.wrong {
+  color: #dc2626;
+}
+
+/* hint dots (reserved space so the pad never moves) */
+.dots-slot {
+  min-height: 1.6rem;
+  margin-top: 0.4rem;
+}
+
+.dots-slot.tall {
+  min-height: 3.2rem;
+}
+
+.dots {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.25rem;
+  max-width: 15rem;
+}
+
+.dot {
+  width: 0.95rem;
+  height: 0.95rem;
+  border: 2px solid #2563eb;
+  border-radius: 50%;
+}
+
+.dot.a {
+  background: #2563eb;
+}
+
+.dot.b {
+  background: #f59e0b;
+  border-color: #f59e0b;
+}
+
+/* ----- skip counting ----- */
+
+.skip-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.skip-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3.4rem;
+  height: 3.4rem;
+  padding: 0 0.4rem;
+  border: 3px solid #cbd5e1;
+  border-radius: 12px;
+  background: white;
+  font-size: 1.7rem;
+  font-weight: 700;
+}
+
+/* ----- compare ----- */
+
+.compare-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  font-size: 2.2rem;
+  font-weight: 800;
+}
+
+.compare-side {
+  min-width: 5rem;
+  padding: 0.5rem 0.9rem;
+  text-align: center;
+  border: 3px solid #cbd5e1;
+  border-radius: 14px;
+  background: white;
+}
+
+.compare-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.6rem;
+  height: 3.6rem;
+  border: 3px dashed #2563eb;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #1e40af;
+}
+
+.compare-slot.wrong {
+  border-color: #dc2626;
+  background: #fef2f2;
+  color: #dc2626;
+  animation: shake 0.35s;
+}
+
+.compare-choices {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem;
+  width: 100%;
+  max-width: 300px;
+  margin-top: 1rem;
+}
+
+.compare-choices button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0;
+  padding: 0.7rem 0;
+  border-radius: 14px;
+  background: white;
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1.1;
+  touch-action: manipulation;
+}
+
+.compare-choices button small {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+.compare-choices button.wrong {
+  opacity: 0.4;
+}
+
+/* after two wrong tries the right choice glows */
+.compare-choices button.glow {
+  box-shadow: 0 0 0 4px #f59e0b;
+}
+
+.compare-choices button:focus-visible {
+  outline: 3px solid #1d4ed8;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .answer-box.wrong,
+  .compare-slot.wrong {
+    animation: none;
+  }
+}

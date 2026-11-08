@@ -316,3 +316,9 @@ button.sticker:focus-visible {
 .sticker:not(.got) .sticker-icon {
   opacity: 1;
 }
+
+/* what a level practises */
+.stop-desc {
+  font-size: 0.8rem;
+  color: #4b5563;
+}

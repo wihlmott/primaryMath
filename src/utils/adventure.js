@@ -1,5 +1,7 @@
 /* Static data for the adventure: avatars, modes, level islands, stickers. */
 
+import { ladderLength } from "./mathEngine";
+
 /* ---------------------------------------------------------
    Avatars. `id` is what gets saved; `emoji` is only used to
    migrate progress saved by the older emoji-based version.
@@ -31,12 +33,24 @@ export const SLOTS = [
     { id: "neck", label: "Neck" },
 ];
 
+/* Every mode has its own ladder of levels (see mathEngine.js). */
 export const MODES = [
-    { id: "add", icon: "➕", label: "Add" },
-    { id: "sub", icon: "➖", label: "Subtract" },
-    { id: "mul", icon: "✖️", label: "Multiply" },
-    { id: "mixed", icon: "🎲", label: "Mix" },
+    { id: "add", icon: "➕", label: "Add", group: "calc" },
+    { id: "sub", icon: "➖", label: "Subtract", group: "calc" },
+    { id: "mul", icon: "✖️", label: "Multiply", group: "calc" },
+    { id: "mixed", icon: "🎲", label: "Mix", group: "calc" },
+    { id: "missing", icon: "❓", label: "Missing number", group: "games" },
+    { id: "bonds", icon: "🔗", label: "Number bonds", group: "games" },
+    { id: "compare", icon: "⚖️", label: "Compare", group: "games" },
+    { id: "skip", icon: "🦘", label: "Skip counting", group: "games" },
 ];
+
+export const MODE_GROUPS = [
+    { id: "calc", label: "Calculate" },
+    { id: "games", label: "Number games" },
+];
+
+/* Each ladder uses as many islands as it has levels (the longest has 10). */
 
 export const LEVELS = [
     { level: 1, emoji: "🏖️", name: "Sunny Beach" },
@@ -44,9 +58,35 @@ export const LEVELS = [
     { level: 3, emoji: "💎", name: "Crystal Cave" },
     { level: 4, emoji: "🌋", name: "Fire Mountain" },
     { level: 5, emoji: "🏰", name: "Cloud Castle" },
+    { level: 6, emoji: "🐠", name: "Coral Reef" },
+    { level: 7, emoji: "🏴‍☠️", name: "Pirate Cove" },
+    { level: 8, emoji: "🏔️", name: "Snowy Peak" },
+    { level: 9, emoji: "🌙", name: "Moon Base" },
+    { level: 10, emoji: "⭐", name: "Star Palace" },
 ];
 
-export const MAX_LEVEL = LEVELS.length;
+/* ---------------------------------------------------------
+   Pacing: how many right answers clear a level.
+   Level 1 needs `base`; every two levels after that needs one
+   more, so harder levels take a little longer. For example
+   with base 5: levels 1-2 need 5, 3-4 need 6, ... 9-10 need 9.
+   --------------------------------------------------------- */
+export const PACES = [
+    { id: "quick", label: "Quick", base: 3 },
+    { id: "steady", label: "Steady", base: 5 },
+    { id: "careful", label: "Careful", base: 8 },
+];
+
+export function levelNeed(base, level) {
+    return base + Math.floor((level - 1) / 2);
+}
+
+/** The pace whose base is closest to a saved value (older saves allowed 1-20). */
+export function nearestPace(value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return PACES[1];
+    return PACES.reduce((best, p) => (Math.abs(p.base - n) < Math.abs(best.base - n) ? p : best));
+}
 
 /** Game length choices. null = no limit (play until the hearts run out). */
 export const QUESTION_CHOICES = [5, 10, 20, 30, null];
@@ -58,6 +98,13 @@ export const HEART_EVERY = 10; // no-limit games: +1 heart every N right answers
 
 export function highestLevel(learner) {
     return Math.max(1, ...Object.values(learner.bestLevel ?? {}));
+}
+
+/** True if the learner has reached the last level of any ladder. */
+export function reachedTop(learner) {
+    return Object.entries(learner.bestLevel ?? {}).some(
+        ([mode, level]) => level >= ladderLength(mode),
+    );
 }
 
 /* ---------------------------------------------------------
@@ -90,8 +137,8 @@ export const STICKERS = [
         name: "Golden crown",
         slot: "head",
         box: "24 0 52 32",
-        how: "Reach the top level",
-        test: (l) => highestLevel(l) >= MAX_LEVEL,
+        how: "Reach the top level of any ladder",
+        test: (l) => reachedTop(l),
     },
     {
         id: "hundred",

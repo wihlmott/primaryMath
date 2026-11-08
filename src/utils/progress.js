@@ -1,7 +1,7 @@
 /* Saved progress (browser localStorage; nothing leaves the device).
    Falls back to in-memory storage if localStorage is unavailable. */
 
-import { STICKERS, STICKER_BY_ID, normalizeAvatar } from "./adventure";
+import { MODES, STICKERS, STICKER_BY_ID, normalizeAvatar } from "./adventure";
 
 const KEY = "mathAdventure.v1";
 let memoryStore = null; // used when localStorage can't be read or written
@@ -62,7 +62,7 @@ export function blankLearner(name, avatar) {
         retriesFixed: 0,
         bestCleanStreak: 0,
         bestRun: 0,
-        bestLevel: { add: 1, sub: 1, mul: 1, mixed: 1 },
+        bestLevel: Object.fromEntries(MODES.map((m) => [m.id, 1])),
         solvedByOp: {},
         stickers: {},
         equipped: { ...NOTHING_WORN },

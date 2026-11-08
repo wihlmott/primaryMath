@@ -14,12 +14,12 @@ export default function GameHeader({
     heartHint, // answers until the next bonus heart (no-limit games), else null
     solved,
     total, // number, or null when there is no question limit
-    perLevel,
+    intoLevel, // right answers since this level began
+    need, // right answers needed to clear it
     atMaxLevel,
     onBack,
 }) {
-    const intoLevel = solved % perLevel;
-    const pct = atMaxLevel ? 100 : (intoLevel / perLevel) * 100;
+    const pct = atMaxLevel ? 100 : Math.min(100, (intoLevel / need) * 100);
     const island = LEVELS[level - 1];
 
     return (
@@ -77,8 +77,8 @@ export default function GameHeader({
                 role="progressbar"
                 aria-label="Progress to next level"
                 aria-valuemin={0}
-                aria-valuemax={perLevel}
-                aria-valuenow={atMaxLevel ? perLevel : intoLevel}
+                aria-valuemax={need}
+                aria-valuenow={atMaxLevel ? need : intoLevel}
             >
                 <motion.div
                     className="level-progress-fill"
@@ -89,7 +89,7 @@ export default function GameHeader({
             <div className="level-progress-label">
                 {atMaxLevel
                     ? "Top level! 🏆"
-                    : `${intoLevel} of ${perLevel} to Level ${level + 1}`}
+                    : `${intoLevel} of ${need} to Level ${level + 1}`}
             </div>
         </header>
     );

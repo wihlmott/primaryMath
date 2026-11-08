@@ -5,7 +5,11 @@ import {
     HEART_EVERY,
     LEVELS,
     MODES,
+    MODE_GROUPS,
+    PACES,
     QUESTION_CHOICES,
+    levelNeed,
+    nearestPace,
     normalizeAvatar,
 } from "../utils/adventure";
 import {
@@ -18,6 +22,7 @@ import {
     saveSettings,
     upsertLearner,
 } from "../utils/progress";
+import { describeLevel, ladderLength } from "../utils/mathEngine";
 import Avatar from "../components/Avatar";
 import "../styles/landing.css";
 
@@ -38,7 +43,7 @@ function initialSettings() {
         learnerName: typeof saved.learnerName === "string" ? saved.learnerName : DEFAULTS.learnerName,
         avatar: normalizeAvatar(saved.avatar), // also migrates old emoji avatars
         startingLevel: LEVELS.some((l) => l.level === saved.startingLevel) ? saved.startingLevel : DEFAULTS.startingLevel,
-        correctsPerLevel: Number.isInteger(saved.correctsPerLevel) && saved.correctsPerLevel >= 1 ? Math.min(saved.correctsPerLevel, 20) : DEFAULTS.correctsPerLevel,
+        correctsPerLevel: nearestPace(saved.correctsPerLevel ?? DEFAULTS.correctsPerLevel).base, // older saves allowed 1-20
         operationMode: MODES.some((m) => m.id === saved.operationMode) ? saved.operationMode : DEFAULTS.operationMode,
         showHelp: typeof saved.showHelp === "boolean" ? saved.showHelp : DEFAULTS.showHelp,
         maxQuestions: QUESTION_CHOICES.includes(saved.maxQuestions) ? saved.maxQuestions : DEFAULTS.maxQuestions,
@@ -61,31 +66,6 @@ function RadioChoice({ name, checked, onChange, label, className = "", children 
     );
 }
 
-/** − value + control (no typing, so it can never be empty or invalid). */
-function Stepper({ value, min, max, onChange, label }) {
-    return (
-        <div className="stepper" role="group" aria-label={label}>
-            <button
-                type="button"
-                aria-label={`Fewer: ${label}`}
-                disabled={value <= min}
-                onClick={() => onChange(value - 1)}
-            >
-                −
-            </button>
-            <output aria-live="polite">{value}</output>
-            <button
-                type="button"
-                aria-label={`More: ${label}`}
-                disabled={value >= max}
-                onClick={() => onChange(value + 1)}
-            >
-                +
-            </button>
-        </div>
-    );
-}
-
 export default function LandingPage({ onStart, onOpenBook }) {
     const [initial] = useState(initialSettings);
     const [profiles, setProfiles] = useState(listLearners);
@@ -101,6 +81,10 @@ export default function LandingPage({ onStart, onOpenBook }) {
     // Reset controls: which action is waiting for confirmation, and the result message
     const [pending, setPending] = useState(null); // null | "reset" | "delete" | "erase"
     const [notice, setNotice] = useState("");
+
+    // Each mode has its own ladder, so its length limits the starting level
+    const ladderMax = ladderLength(operationMode);
+    const effectiveLevel = Math.min(startingLevel, ladderMax);
 
     const trimmed = name.trim();
     const hasAdventure = Boolean(getLearner(trimmed));
@@ -149,7 +133,7 @@ export default function LandingPage({ onStart, onOpenBook }) {
         const config = {
             learnerName: trimmed,
             avatar,
-            startingLevel,
+            startingLevel: effectiveLevel,
             correctsPerLevel,
             operationMode,
             showHelp,
@@ -223,26 +207,32 @@ export default function LandingPage({ onStart, onOpenBook }) {
                     </div>
                 </fieldset>
 
-                <fieldset className="group">
-                    <legend>What do you want to practise?</legend>
-                    <div className="op-grid">
-                        {MODES.map((m) => (
-                            <RadioChoice
-                                key={m.id}
-                                name="operation"
-                                label={m.label}
-                                checked={operationMode === m.id}
-                                onChange={() => setOperationMode(m.id)}
-                                className="op-body"
-                            >
-                                <span className="op-icon" aria-hidden="true">
-                                    {m.icon}
-                                </span>
-                                <span>{m.label}</span>
-                            </RadioChoice>
-                        ))}
-                    </div>
-                </fieldset>
+                {MODE_GROUPS.map((group) => (
+                    <fieldset className="group" key={group.id}>
+                        <legend>
+                            {group.id === "calc"
+                                ? "What do you want to practise?"
+                                : "Or play a number game"}
+                        </legend>
+                        <div className="op-grid">
+                            {MODES.filter((m) => m.group === group.id).map((m) => (
+                                <RadioChoice
+                                    key={m.id}
+                                    name="operation"
+                                    label={m.label}
+                                    checked={operationMode === m.id}
+                                    onChange={() => setOperationMode(m.id)}
+                                    className="op-body"
+                                >
+                                    <span className="op-icon" aria-hidden="true">
+                                        {m.icon}
+                                    </span>
+                                    <span>{m.label}</span>
+                                </RadioChoice>
+                            ))}
+                        </div>
+                    </fieldset>
+                ))}
 
                 <button type="submit" className="start-btn" disabled={!trimmed}>
                     Let's go! 🚀
@@ -263,7 +253,7 @@ export default function LandingPage({ onStart, onOpenBook }) {
                     <summary>
                         Grown-up settings
                         <span className="summary-hint">
-                            {lengthSummary} · starts at Level {startingLevel}
+                            {lengthSummary} · starts at Level {effectiveLevel}
                         </span>
                     </summary>
 
@@ -296,29 +286,41 @@ export default function LandingPage({ onStart, onOpenBook }) {
                         </label>
                         <select
                             id="start-level"
-                            value={startingLevel}
+                            value={effectiveLevel}
                             onChange={(e) => setStartingLevel(Number(e.target.value))}
                         >
-                            {LEVELS.map((l) => (
+                            {LEVELS.slice(0, ladderMax).map((l) => (
                                 <option key={l.level} value={l.level}>
                                     Level {l.level}: {l.name}
                                 </option>
                             ))}
                         </select>
+                        <p className="setting-note">
+                            {describeLevel(operationMode, effectiveLevel)}
+                        </p>
                     </div>
 
-                    <div className="group">
-                        <span className="group-label" id="per-level-label">
-                            Right answers to level up
-                        </span>
-                        <Stepper
-                            label="right answers to level up"
-                            value={correctsPerLevel}
-                            min={1}
-                            max={20}
-                            onChange={setCorrectsPerLevel}
-                        />
-                    </div>
+                    <fieldset className="group">
+                        <legend>How fast to level up?</legend>
+                        <div className="chip-row">
+                            {PACES.map((p) => (
+                                <RadioChoice
+                                    key={p.id}
+                                    name="pace"
+                                    label={`${p.label}: ${p.base} right answers at level 1`}
+                                    checked={correctsPerLevel === p.base}
+                                    onChange={() => setCorrectsPerLevel(p.base)}
+                                    className="chip-body"
+                                >
+                                    {p.label}
+                                </RadioChoice>
+                            ))}
+                        </div>
+                        <p className="setting-note">
+                            Level 1 needs {correctsPerLevel} right answers. Harder levels need a few
+                            more, up to {levelNeed(correctsPerLevel, ladderMax)} at level {ladderMax}.
+                        </p>
+                    </fieldset>
 
                     <div className="checkbox-row">
                         <input

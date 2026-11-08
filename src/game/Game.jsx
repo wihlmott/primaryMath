@@ -3,17 +3,19 @@ import { AnimatePresence } from "framer-motion";
 
 import GameHeader from "./GameHeader";
 import ColumnProblem from "./ColumnProblem";
+import NumberProblem from "./NumberProblem";
+import CompareProblem from "./CompareProblem";
 import RoundResultModal from "./RoundResultModal";
 import ConfirmLeaveModal from "./ConfirmLeaveModal";
 import LevelUpBanner from "./LevelUpBanner";
 import ScoreToast from "./ScoreToast";
 
-import { generateProblem } from "../utils/mathEngine";
+import { generateProblem, ladderLength } from "../utils/mathEngine";
 import {
     BONUS_MAX_HEARTS,
     HEART_EVERY,
     MAX_HEARTS,
-    MAX_LEVEL,
+    levelNeed,
     normalizeAvatar,
 } from "../utils/adventure";
 import { awardStickers, loadLearner, saveLearner } from "../utils/progress";
@@ -32,13 +34,7 @@ function makeProblem(level, operationMode, previous) {
     do {
         next = generateProblem(level, operationMode);
         guard += 1;
-    } while (
-        previous &&
-        guard < 20 &&
-        next.a === previous.a &&
-        next.b === previous.b &&
-        next.operation === previous.operation
-    );
+    } while (previous && guard < 20 && next.key === previous.key);
 
     return {
         ...next,
@@ -76,9 +72,13 @@ export default function Game({
     // No-limit games can hold more hearts, and earn one every HEART_EVERY answers
     const maxHearts = infinite ? BONUS_MAX_HEARTS : MAX_HEARTS;
 
-    // An emptied number field gives 0 (or NaN), which would break `%` and
-    // stop level-ups. Always use a whole number >= 1.
-    const perLevel = Math.max(1, Math.floor(Number(correctsPerLevel)) || 1);
+    // Right answers needed to clear level 1; later levels need a few more
+    // (see levelNeed). Always a whole number >= 1.
+    const basePace = Math.max(1, Math.floor(Number(correctsPerLevel)) || 1);
+
+    // Every mode has its own ladder, so its own top level
+    const maxLevel = ladderLength(operationMode);
+    const firstLevel = Math.min(Math.max(1, Math.floor(Number(startingLevel)) || 1), maxLevel);
 
     // Saved progress lives in a ref so several updates in one event stay in order
     const learnerRef = useRef(null);
@@ -88,19 +88,22 @@ export default function Game({
         bestRunBefore.current = learnerRef.current.bestRun;
     }
 
-    const [level, setLevel] = useState(startingLevel);
+    const [level, setLevel] = useState(firstLevel);
+    const [inLevel, setInLevel] = useState(0); // right answers since this level began
     const [points, setPoints] = useState(0);
     const [hearts, setHearts] = useState(MAX_HEARTS); // always start with 3
     const [solved, setSolved] = useState(0); // correct answers this round
     const [mistakes, setMistakes] = useState(0); // wrong tries this round
     const [cleanStreak, setCleanStreak] = useState(0); // right first time, in a row
     const [problem, setProblem] = useState(() =>
-        makeProblem(startingLevel, operationMode),
+        makeProblem(firstLevel, operationMode),
     );
     const [result, setResult] = useState(null); // null | { completed, stars }
     const [confirmLeave, setConfirmLeave] = useState(false);
     const [earnedList, setEarnedList] = useState([]); // stickers won this round
     const [equipped, setEquipped] = useState(() => learnerRef.current.equipped);
+
+    const need = levelNeed(basePace, level); // right answers to clear this level
 
     const [toast, setToast] = useState(null);
     const [banner, setBanner] = useState(null); // { id, text, stickerId }
@@ -204,11 +207,13 @@ export default function Game({
             const gained = attemptNo === 1 ? POINTS_FIRST_TRY : POINTS_AFTER_RETRY;
             const nextSolved = solved + 1;
             const roundDone = !infinite && nextSolved >= maxQuestions;
-            const levelsUp = level < MAX_LEVEL && nextSolved % perLevel === 0;
+            const nextInLevel = inLevel + 1;
+            const levelsUp = level < maxLevel && nextInLevel >= need;
             const heartMilestone = infinite && nextSolved % HEART_EVERY === 0;
             const nextLevel = levelsUp ? level + 1 : level;
             const nextClean = attemptNo === 1 ? cleanStreak + 1 : 0;
-            const op = problem.operation;
+            // what the saved stats count this under: + - × for column maths, else the format
+            const op = problem.kind === "column" ? problem.operation : problem.kind;
 
             // Level-ups refill a heart; no-limit games also earn one every
             // HEART_EVERY answers. Both stop at the cap.
@@ -220,6 +225,7 @@ export default function Game({
             setSolved(nextSolved);
             setCleanStreak(nextClean);
             if (levelsUp) setLevel(nextLevel);
+            setInLevel(levelsUp ? 0 : nextInLevel);
             if (heartsAdded > 0) setHearts(nextHearts);
 
             let earned = track((l) => ({
@@ -280,7 +286,8 @@ export default function Game({
 
     function restart() {
         clearBanners();
-        setLevel(startingLevel);
+        setLevel(firstLevel);
+        setInLevel(0);
         setPoints(0);
         setHearts(MAX_HEARTS);
         setSolved(0);
@@ -289,10 +296,18 @@ export default function Game({
         setResult(null);
         setEarnedList([]);
         bestRunBefore.current = learnerRef.current.bestRun;
-        setProblem(makeProblem(startingLevel, operationMode, problem));
+        setProblem(makeProblem(firstLevel, operationMode, problem));
     }
 
     const isNewBest = infinite && solved > 0 && solved > bestRunBefore.current;
+
+    // Each kind of problem has its own screen
+    const ProblemView =
+        problem.kind === "column"
+            ? ColumnProblem
+            : problem.kind === "compare"
+              ? CompareProblem
+              : NumberProblem;
 
     return (
         <div className="game">
@@ -307,16 +322,24 @@ export default function Game({
                 heartHint={infinite ? HEART_EVERY - (solved % HEART_EVERY) : null}
                 solved={solved}
                 total={maxQuestions}
-                perLevel={perLevel}
-                atMaxLevel={level >= MAX_LEVEL}
+                intoLevel={inLevel}
+                need={need}
+                atMaxLevel={level >= maxLevel}
                 onBack={() => setConfirmLeave(true)}
             />
 
-            <ColumnProblem
+            <ProblemView
                 key={problem.id}
                 problem={problem}
                 onSubmit={submitAnswer}
-                onIncomplete={() => flash("Fill in every digit", "info")}
+                onIncomplete={() =>
+                    flash(
+                        problem.kind === "column"
+                            ? "Fill in every digit"
+                            : "Type your answer first",
+                        "info",
+                    )
+                }
                 showHelp={showHelp}
                 disabled={Boolean(result) || confirmLeave}
             />
