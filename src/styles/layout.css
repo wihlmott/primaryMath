@@ -95,3 +95,8 @@
   font-size: 0.75rem;
   color: #6b7280;
 }
+
+/* explorer picture in the header: keep the row compact */
+.game-header .name .avatar-img {
+  margin: -0.2rem 0 -0.2rem;
+}

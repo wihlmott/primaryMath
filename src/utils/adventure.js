@@ -3,27 +3,32 @@
 import { ladderLength } from "./mathEngine";
 
 /* ---------------------------------------------------------
-   Avatars. `id` is what gets saved; `emoji` is only used to
-   migrate progress saved by the older emoji-based version.
+   Explorers: 3D characters, shoulders up (see components/avatar3d.js).
+   Two boys, two girls and four animals. `id` is what gets saved.
    --------------------------------------------------------- */
 export const AVATARS = [
-    { id: "fox", name: "Fox", emoji: "🦊" },
-    { id: "panda", name: "Panda", emoji: "🐼" },
-    { id: "frog", name: "Frog", emoji: "🐸" },
-    { id: "lion", name: "Lion", emoji: "🦁" },
-    { id: "octopus", name: "Octopus", emoji: "🐙" },
-    { id: "unicorn", name: "Unicorn", emoji: "🦄" },
-    { id: "dragon", name: "Dragon", emoji: "🐲" },
-    { id: "penguin", name: "Penguin", emoji: "🐧" },
+    { id: "leo", name: "Leo", kind: "boy" },
+    { id: "mia", name: "Mia", kind: "girl" },
+    { id: "max", name: "Max", kind: "boy" },
+    { id: "zoe", name: "Zoe", kind: "girl" },
+    { id: "fox", name: "Fox", kind: "animal" },
+    { id: "panda", name: "Panda", kind: "animal" },
+    { id: "cat", name: "Cat", kind: "animal" },
+    { id: "bunny", name: "Bunny", kind: "animal" },
 ];
 
 export const AVATAR_IDS = AVATARS.map((a) => a.id);
 
-/** Accepts an avatar id or an old emoji; always returns a valid id. */
+/* Saves from older versions used emoji or the old animal ids. */
+const LEGACY_AVATARS = {
+    "🦊": "fox", "🐼": "panda", "🐸": "bunny", "🦁": "cat", "🐙": "zoe", "🦄": "mia", "🐲": "max", "🐧": "leo",
+    frog: "bunny", lion: "cat", octopus: "zoe", unicorn: "mia", dragon: "max", penguin: "leo",
+};
+
+/** Accepts an avatar id (or an old emoji / id); always returns a valid id. */
 export function normalizeAvatar(value) {
     if (AVATAR_IDS.includes(value)) return value;
-    const byEmoji = AVATARS.find((a) => a.emoji === value);
-    return byEmoji ? byEmoji.id : AVATARS[0].id;
+    return LEGACY_AVATARS[value] ?? AVATARS[0].id;
 }
 
 /* Where a sticker sits on the avatar */
@@ -35,14 +40,14 @@ export const SLOTS = [
 
 /* Every mode has its own ladder of levels (see mathEngine.js). */
 export const MODES = [
-    { id: "add", icon: "➕", label: "Add", group: "calc" },
-    { id: "sub", icon: "➖", label: "Subtract", group: "calc" },
-    { id: "mul", icon: "✖️", label: "Multiply", group: "calc" },
-    { id: "mixed", icon: "🎲", label: "Mix", group: "calc" },
-    { id: "missing", icon: "❓", label: "Missing number", group: "games" },
-    { id: "bonds", icon: "🔗", label: "Number bonds", group: "games" },
-    { id: "compare", icon: "⚖️", label: "Compare", group: "games" },
-    { id: "skip", icon: "🦘", label: "Skip counting", group: "games" },
+    { id: "add", label: "Add", group: "calc" },
+    { id: "sub", label: "Subtract", group: "calc" },
+    { id: "mul", label: "Multiply", group: "calc" },
+    { id: "mixed", label: "Mix", group: "calc" },
+    { id: "missing", label: "Missing number", group: "games" },
+    { id: "bonds", label: "Number bonds", group: "games" },
+    { id: "compare", label: "Compare", group: "games" },
+    { id: "skip", label: "Skip counting", group: "games" },
 ];
 
 export const MODE_GROUPS = [
@@ -110,8 +115,7 @@ export function reachedTop(learner) {
 /* ---------------------------------------------------------
    Stickers: collectable items an explorer can wear.
    - `slot` is where it goes (head / face / neck).
-   - `box` is the crop used for its icon (art is in
-     components/avatarArt.jsx, keyed by the same id).
+   - its 3D model is in components/avatar3d.js, keyed by the same id.
    - `test(learner)` looks at the saved stats, so a sticker is
      awarded the moment its condition is reached.
    --------------------------------------------------------- */
@@ -120,7 +124,6 @@ export const STICKERS = [
         id: "first-steps",
         name: "Sprout",
         slot: "head",
-        box: "26 0 48 28",
         how: "Solve your first problem",
         test: (l) => l.totalSolved >= 1,
     },
@@ -128,7 +131,6 @@ export const STICKERS = [
         id: "climber",
         name: "Climber's helmet",
         slot: "head",
-        box: "18 2 64 32",
         how: "Reach level 3",
         test: (l) => highestLevel(l) >= 3,
     },
@@ -136,7 +138,6 @@ export const STICKERS = [
         id: "summit",
         name: "Golden crown",
         slot: "head",
-        box: "24 0 52 32",
         how: "Reach the top level of any ladder",
         test: (l) => reachedTop(l),
     },
@@ -144,7 +145,6 @@ export const STICKERS = [
         id: "hundred",
         name: "Top hat",
         slot: "head",
-        box: "20 0 60 32",
         how: "Solve 100 problems",
         test: (l) => l.totalSolved >= 100,
     },
@@ -152,7 +152,6 @@ export const STICKERS = [
         id: "explorer",
         name: "Explorer goggles",
         slot: "face",
-        box: "12 32 76 28",
         how: "Solve an add, a subtract and a multiply problem",
         test: (l) =>
             (l.solvedByOp["+"] || 0) > 0 &&
@@ -163,7 +162,6 @@ export const STICKERS = [
         id: "on-fire",
         name: "Cool shades",
         slot: "face",
-        box: "14 32 72 28",
         how: "Get 10 right first time in a row",
         test: (l) => l.bestCleanStreak >= 10,
     },
@@ -171,7 +169,6 @@ export const STICKERS = [
         id: "never-give-up",
         name: "Brave bandage",
         slot: "face",
-        box: "50 42 36 32",
         how: "Fix a mistake and get it right",
         test: (l) => l.retriesFixed >= 1,
     },
@@ -179,7 +176,6 @@ export const STICKERS = [
         id: "star-collector",
         name: "Star shades",
         slot: "face",
-        box: "14 30 72 32",
         how: "Earn 10 stars",
         test: (l) => l.totalStars >= 10,
     },
@@ -187,7 +183,6 @@ export const STICKERS = [
         id: "ten",
         name: "Blue bandana",
         slot: "neck",
-        box: "22 72 56 30",
         how: "Solve 10 problems",
         test: (l) => l.totalSolved >= 10,
     },
@@ -195,7 +190,6 @@ export const STICKERS = [
         id: "fifty",
         name: "Silver medal",
         slot: "neck",
-        box: "28 72 44 30",
         how: "Solve 50 problems",
         test: (l) => l.totalSolved >= 50,
     },
@@ -203,7 +197,6 @@ export const STICKERS = [
         id: "perfect",
         name: "Gold medal",
         slot: "neck",
-        box: "28 72 44 30",
         how: "Finish a round with no mistakes",
         test: (l) => l.perfectRounds >= 1,
     },
@@ -211,7 +204,6 @@ export const STICKERS = [
         id: "marathon",
         name: "Striped scarf",
         slot: "neck",
-        box: "20 72 62 30",
         how: "Solve 25 in one no-limit run",
         test: (l) => l.bestRun >= 25,
     },

@@ -322,3 +322,25 @@ button.sticker:focus-visible {
   font-size: 0.8rem;
   color: #4b5563;
 }
+
+/* mode icon inside a journey tab */
+.book-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* the live 3D preview: horizontal drags turn it, vertical drags still scroll the page */
+.avatar-viewer {
+  display: block;
+  touch-action: pan-y;
+  cursor: grab;
+}
+
+.avatar-viewer:active {
+  cursor: grabbing;
+}
+
+.dress-preview .book-hint {
+  margin: 0;
+}

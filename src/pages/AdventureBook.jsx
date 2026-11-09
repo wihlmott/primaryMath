@@ -3,6 +3,8 @@ import { LEVELS, MODES, SLOTS, STICKERS } from "../utils/adventure";
 import { getLearner, loadSettings, saveLearner, toggleEquipped } from "../utils/progress";
 import { describeLevel, ladderLength } from "../utils/mathEngine";
 import Avatar from "../components/Avatar";
+import AvatarViewer from "../components/AvatarViewer";
+import ModeIcon from "../components/ModeIcon";
 import StickerIcon from "../components/StickerIcon";
 import "../styles/book.css";
 
@@ -48,8 +50,9 @@ export default function AdventureBook({ learnerName, onBack }) {
             <h1 className="book-title">My adventure</h1>
 
             <div className="dress-preview">
-                <Avatar id={learner.avatar} equipped={learner.equipped} size={132} />
+                <AvatarViewer id={learner.avatar} equipped={learner.equipped} size={190} />
                 <div className="book-name">{learner.name}</div>
+                <div className="book-hint">Drag to turn your explorer</div>
             </div>
 
             <ul className="book-stats">
@@ -88,7 +91,7 @@ export default function AdventureBook({ learnerName, onBack }) {
 
                     const inner = (
                         <>
-                            <StickerIcon id={s.id} size={58} locked={!got} />
+                            <StickerIcon id={s.id} size={76} locked={!got} />
                             <strong>{got ? s.name : "Mystery sticker"}</strong>
                             <span>{s.how}</span>
                             {got && (
@@ -128,7 +131,7 @@ export default function AdventureBook({ learnerName, onBack }) {
                         aria-pressed={mode === m.id}
                         onClick={() => setMode(m.id)}
                     >
-                        <span aria-hidden="true">{m.icon}</span> {m.label}
+                        <ModeIcon id={m.id} size={24} /> {m.label}
                     </button>
                 ))}
             </div>

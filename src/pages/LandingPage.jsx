@@ -24,6 +24,7 @@ import {
 } from "../utils/progress";
 import { describeLevel, ladderLength } from "../utils/mathEngine";
 import Avatar from "../components/Avatar";
+import ModeIcon from "../components/ModeIcon";
 import "../styles/landing.css";
 
 const DEFAULTS = {
@@ -201,7 +202,7 @@ export default function LandingPage({ onStart, onOpenBook }) {
                                 onChange={() => setAvatar(a.id)}
                                 className="avatar-body"
                             >
-                                <Avatar id={a.id} size={54} />
+                                <Avatar id={a.id} size={66} />
                             </RadioChoice>
                         ))}
                     </div>
@@ -224,9 +225,7 @@ export default function LandingPage({ onStart, onOpenBook }) {
                                     onChange={() => setOperationMode(m.id)}
                                     className="op-body"
                                 >
-                                    <span className="op-icon" aria-hidden="true">
-                                        {m.icon}
-                                    </span>
+                                    <ModeIcon id={m.id} size={52} />
                                     <span>{m.label}</span>
                                 </RadioChoice>
                             ))}

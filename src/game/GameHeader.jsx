@@ -32,7 +32,7 @@ export default function GameHeader({
 
             <div className="status">
                 <span className="name">
-                    <Avatar id={avatar} equipped={equipped} size={34} />
+                    <Avatar id={avatar} equipped={equipped} size={44} />
                     {name}
                 </span>
                 <span>

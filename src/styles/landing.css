@@ -402,3 +402,17 @@
   font-weight: 800;
   color: white;
 }
+
+/* mode tiles: the SVG icon sits above the label */
+.op-body {
+  gap: 0.35rem;
+  min-height: 6.2rem;
+  padding: 0.6rem 0.4rem 0.5rem;
+  text-align: center;
+  line-height: 1.15;
+}
+
+/* the explorer pictures fill their tiles */
+.avatar-grid .avatar-body {
+  padding: 0.35rem 0 0.1rem;
+}
