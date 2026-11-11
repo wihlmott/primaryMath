@@ -25,6 +25,7 @@ import {
 import { describeLevel, ladderLength } from "../utils/mathEngine";
 import Avatar from "../components/Avatar";
 import ModeIcon from "../components/ModeIcon";
+import PwaPanel, { UpdateBanner } from "../components/PwaPanel";
 import "../styles/landing.css";
 
 const DEFAULTS = {
@@ -151,6 +152,7 @@ export default function LandingPage({ onStart, onOpenBook }) {
     return (
         <div className="landing">
             <form className="landing-card" onSubmit={start}>
+                <UpdateBanner />
                 <h1 className="landing-title">Math Adventure</h1>
                 <p className="tagline">Pick your explorer and let's go!</p>
 
@@ -330,6 +332,8 @@ export default function LandingPage({ onStart, onOpenBook }) {
                         />
                         <label htmlFor="showHelp">Show hints &amp; pictures</label>
                     </div>
+
+                    <PwaPanel />
 
                     <fieldset className="group">
                         <legend>Saved progress</legend>

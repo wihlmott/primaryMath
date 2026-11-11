@@ -330,11 +330,18 @@ button.sticker:focus-visible {
   gap: 0.4rem;
 }
 
-/* the live 3D preview: horizontal drags turn it, vertical drags still scroll the page */
+/* the live 3D preview: drag to make the explorer look around */
 .avatar-viewer {
   display: block;
-  touch-action: pan-y;
+  /* both directions are used for looking around (up/down as well as left/right) */
+  touch-action: none;
   cursor: grab;
+  border-radius: 18px;
+}
+
+.avatar-viewer:focus-visible {
+  outline: 3px solid #1d4ed8;
+  outline-offset: 4px;
 }
 
 .avatar-viewer:active {

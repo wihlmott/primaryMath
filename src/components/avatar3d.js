@@ -190,18 +190,39 @@ function hairCap(color, { thetaLen = 1.55, tilt = -0.45, r = 1.06, outline = 0.0
 
 /* =========================================================
    Explorers (shoulders up)
+   ---------------------------------------------------------
+   Each explorer is a `body` (neck and shoulders) plus a `head` that can
+   turn on its own, pivoting at the neck. `headRig()` makes the pivot: parts
+   are modelled in the normal avatar space and added to `holder`, which sits
+   inside `head` at an equal and opposite offset, so nothing moves until the
+   head is turned.
    ========================================================= */
+
+const NECK_Y = -0.9;
+
+function headRig() {
+    const head = new Group();
+    head.position.y = NECK_Y;
+    const holder = new Group();
+    holder.position.y = -NECK_Y;
+    head.add(holder);
+    return { head, holder };
+}
 
 function human({ skin, shirt, collar, hair }) {
     const g = new Group();
-    g.add(body({ neck: skin, shirt, collar }));
-    g.add(ball(1, skin, { outline: 0.03 }));
-    g.add(ears(skin));
-    g.add(cheeks());
-    g.add(eyes());
-    g.add(place(ball(0.075, skin, { mat: { color: "#e0a07a" } }), 0, -0.1, 0.03));
-    g.add(smile());
-    hair(g);
+    const torso = body({ neck: skin, shirt, collar });
+    const rig = headRig();
+    g.add(torso);
+    rig.holder.add(ball(1, skin, { outline: 0.03 }));
+    rig.holder.add(ears(skin));
+    rig.holder.add(cheeks());
+    rig.holder.add(eyes());
+    rig.holder.add(place(ball(0.075, skin, { mat: { color: "#e0a07a" } }), 0, -0.1, 0.03));
+    rig.holder.add(smile());
+    hair(rig.holder);
+    g.add(rig.head);
+    g.userData = { body: torso, head: rig.head, headHolder: rig.holder };
     return g;
 }
 
@@ -291,9 +312,13 @@ const ZOE = () =>
 
 function animal({ fur, shirt, collar, build }) {
     const g = new Group();
-    g.add(body({ neck: fur, shirt, collar }));
-    g.add(ball(1, fur, { outline: 0.03 }));
-    build(g);
+    const torso = body({ neck: fur, shirt, collar });
+    const rig = headRig();
+    g.add(torso);
+    rig.holder.add(ball(1, fur, { outline: 0.03 }));
+    build(rig.holder);
+    g.add(rig.head);
+    g.userData = { body: torso, head: rig.head, headHolder: rig.holder };
     return g;
 }
 
@@ -441,10 +466,10 @@ const ITEMS = {
 
     climber: () => {
         const g = new Group();
-        g.add(part(new SphereGeometry(1.17, 40, 20, 0, Math.PI * 2, 0, Math.PI / 2), std("#fb923c"), { pos: [0, 0.5, 0], scale: [1, 0.86, 1.04], rot: [-0.12, 0, 0], outline: 0.025 }));
+        g.add(part(new SphereGeometry(1.17, 40, 20, 0, Math.PI * 2, 0, Math.PI / 2), std("#fb923c"), { pos: [0, 0.5, 0], scale: [1, 0.96, 1.04], rot: [-0.12, 0, 0], outline: 0.025 }));
         g.add(part(new CylinderGeometry(1.27, 1.27, 0.12, 40), std("#ea580c"), { pos: [0, 0.5, 0.02], rot: [-0.12, 0, 0], outline: 0.03 }));
-        g.add(part(new BoxGeometry(0.16, 0.06, 2.2), std("#ea580c"), { pos: [0, 1.36, 0], rot: [-0.12, 0, 0] }));
-        const lamp = part(new CylinderGeometry(0.21, 0.24, 0.2, 24), std("#fef08a", { emissive: "#fde047", emissiveIntensity: 0.45 }), { pos: [0, 0.86, 1.1], rot: [Math.PI / 2 - 0.2, 0, 0], outline: 0.08 });
+        g.add(part(new TorusGeometry(1.19, 0.055, 8, 48, Math.PI), std("#ea580c"), { pos: [0, 0.5, 0], rot: [-0.12, Math.PI / 2, 0], scale: [1.04, 0.96, 1] }));
+        const lamp = part(new CylinderGeometry(0.21, 0.24, 0.2, 24), std("#fef08a", { emissive: "#fde047", emissiveIntensity: 0.45 }), { pos: [0, 0.9, 1.1], rot: [Math.PI / 2 - 0.2, 0, 0], outline: 0.08 });
         g.add(lamp);
         return g;
     },
@@ -567,14 +592,40 @@ export function buildItem(id) {
     return ITEMS[id] ? ITEMS[id]() : new Group();
 }
 
-/** An explorer, wearing the stickers in `equipped` ({ head, face, neck }). */
+/**
+ * An explorer, wearing the stickers in `equipped` ({ head, face, neck }).
+ * Head and face stickers turn with the head; neck stickers stay on the shoulders.
+ */
 export function buildAvatar(id, equipped = {}) {
-    const g = new Group();
-    g.add((EXPLORERS[id] ?? EXPLORERS.fox)());
+    const root = new Group();
+    const explorer = (EXPLORERS[id] ?? EXPLORERS.fox)();
+    root.add(explorer);
+
+    const { body: torso, headHolder } = explorer.userData;
     for (const slot of SLOT_ORDER) {
-        if (equipped?.[slot]) g.add(buildItem(equipped[slot]));
+        const stickerId = equipped?.[slot];
+        if (stickerId) (slot === "neck" ? torso : headHolder).add(buildItem(stickerId));
     }
-    return g;
+
+    root.userData = explorer.userData; // { body, head, headHolder }
+    return root;
+}
+
+/** How far an explorer can look, in radians. */
+export const LOOK_LIMITS = { yaw: 1.1, pitch: 0.45 };
+
+/**
+ * Make an explorer look somewhere.
+ *   yaw    left / right (negative = viewer's left); 0 looks straight at the camera
+ *   pitch  up / down    (negative = up)
+ *   baseTurn  how far the whole model is already turned, so yaw stays relative to the camera
+ * The shoulders follow a little, like a real turn.
+ */
+export function setLook(model, yaw, pitch, baseTurn = 0) {
+    const { head, body: torso } = model.userData;
+    if (!head) return;
+    head.rotation.set(pitch, yaw - baseTurn, 0, "YXZ");
+    torso.rotation.y = yaw * 0.22;
 }
 
 /** Free the GPU memory of a model that is no longer needed. */

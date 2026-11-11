@@ -52,7 +52,7 @@ export default function AdventureBook({ learnerName, onBack }) {
             <div className="dress-preview">
                 <AvatarViewer id={learner.avatar} equipped={learner.equipped} size={190} />
                 <div className="book-name">{learner.name}</div>
-                <div className="book-hint">Drag to turn your explorer</div>
+                <div className="book-hint">Drag to make your explorer look around</div>
             </div>
 
             <ul className="book-stats">

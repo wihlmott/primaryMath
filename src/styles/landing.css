@@ -416,3 +416,31 @@
 .avatar-grid .avatar-body {
   padding: 0.35rem 0 0.1rem;
 }
+
+/* ----- App updates ----- */
+
+.pwa-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.8rem;
+  background: #dbeafe;
+  border: 2px solid #93c5fd;
+  border-radius: 14px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #1e3a8a;
+}
+
+.pwa-banner button {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0.4rem 0.9rem;
+  background: #2563eb;
+  border-radius: 999px;
+  box-shadow: none;
+  font-weight: 800;
+  color: white;
+}
