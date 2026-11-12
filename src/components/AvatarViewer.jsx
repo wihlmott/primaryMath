@@ -6,6 +6,14 @@ import { AVATAR_FRAME, addLights, frameCamera } from "./render3d";
 import Avatar, { shadowFor } from "./Avatar";
 
 const BASE_TURN = 0.3; // the body sits at a slight angle, which shows off the 3D
+
+// Where the camera moves when a sticker is put on or taken off, so the change is easy to see
+const FOCUS_FRAMES = {
+    head: { cy: 0.85, h: 3.0 },
+    face: { cy: 0.15, h: 2.7 },
+    neck: { cy: -1.3, h: 3.2 },
+};
+const FOCUS_MS = 1700; // how long it stays zoomed in before easing back
 const clamp = (v, limit) => Math.max(-limit, Math.min(limit, v));
 
 /**
@@ -14,13 +22,17 @@ const clamp = (v, limit) => Math.max(-limit, Math.min(limit, v));
  *    shoulders follow a little) and STAYS looking there
  *  - double-tap, or press Home: look straight at you again
  *  - arrow keys work too, when it is focused
+ *  - `focus` ({ slot, n }): zooms in on that part (head / face / neck) for a moment; a new `n` zooms again
+ * `size` is the width and `height` (optional) the height, so it can be a tall portrait.
  * Uses its own WebGL context, so use it for one big preview, not in lists.
  * Falls back to the still picture when WebGL isn't available.
  */
-export default function AvatarViewer({ id, equipped, size = 180 }) {
+export default function AvatarViewer({ id, equipped, size = 180, height, focus = null }) {
+    const h = height ?? size; // `size` is the width; the picture can be taller than wide
     const canvasRef = useRef(null);
     const stage = useRef(null); // { scene, model }
     const gaze = useRef({ yaw: 0, pitch: 0, targetYaw: 0, targetPitch: 0 });
+    const cam = useRef({ cy: AVATAR_FRAME.cy, h: AVATAR_FRAME.h, tcy: AVATAR_FRAME.cy, th: AVATAR_FRAME.h });
     const [failed, setFailed] = useState(false);
 
     const avatarId = normalizeAvatar(id);
@@ -37,12 +49,12 @@ export default function AvatarViewer({ id, equipped, size = 180 }) {
             return undefined;
         }
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-        renderer.setSize(size, size, false);
+        renderer.setSize(size, h, false);
         renderer.setClearColor(0x000000, 0);
 
         const scene = new Scene();
         addLights(scene);
-        const camera = new PerspectiveCamera(20, 1, 0.1, 100);
+        const camera = new PerspectiveCamera(20, size / h, 0.1, 100);
         frameCamera(camera, AVATAR_FRAME);
         stage.current = { scene, model: null };
 
@@ -59,6 +71,12 @@ export default function AvatarViewer({ id, equipped, size = 180 }) {
             const sway = reduceMotion ? 0 : Math.sin((now - start) / 1500) * 0.05;
             const { model } = stage.current;
             if (model) setLook(model, g.yaw + sway, g.pitch, BASE_TURN);
+            // ease the camera towards the zoom target (instantly if the learner prefers less motion)
+            const c = cam.current;
+            const ease = reduceMotion ? 1 : 0.12;
+            c.cy += (c.tcy - c.cy) * ease;
+            c.h += (c.th - c.h) * ease;
+            frameCamera(camera, { cy: c.cy, h: c.h });
             renderer.render(scene, camera);
             raf = requestAnimationFrame(frame);
         }
@@ -132,7 +150,20 @@ export default function AvatarViewer({ id, equipped, size = 180 }) {
             renderer.dispose();
             renderer.forceContextLoss();
         };
-    }, [size]);
+    }, [size, h]);
+
+    /* zoom in on the part that just changed, then ease back out */
+    useEffect(() => {
+        if (!focus || !FOCUS_FRAMES[focus.slot]) return undefined;
+        const c = cam.current;
+        c.tcy = FOCUS_FRAMES[focus.slot].cy;
+        c.th = FOCUS_FRAMES[focus.slot].h;
+        const t = setTimeout(() => {
+            c.tcy = AVATAR_FRAME.cy;
+            c.th = AVATAR_FRAME.h;
+        }, FOCUS_MS);
+        return () => clearTimeout(t);
+    }, [focus?.n]); // eslint-disable-line react-hooks/exhaustive-deps
 
     /* the model is swapped whenever the explorer or what they wear changes; where it looks is kept */
     useEffect(() => {
@@ -145,7 +176,7 @@ export default function AvatarViewer({ id, equipped, size = 180 }) {
         s.model = buildAvatar(avatarId, equipped);
         s.model.rotation.y = BASE_TURN;
         s.scene.add(s.model);
-    }, [avatarId, equipped?.head, equipped?.face, equipped?.neck, size, failed]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [avatarId, equipped?.head, equipped?.face, equipped?.neck, size, h, failed]); // eslint-disable-line react-hooks/exhaustive-deps
 
     if (failed) return <Avatar id={avatarId} equipped={equipped} size={size} />;
 
@@ -156,7 +187,7 @@ export default function AvatarViewer({ id, equipped, size = 180 }) {
             tabIndex={0}
             role="img"
             aria-label={`${name}. Drag, or use the arrow keys, to make them look around. Home looks at you.`}
-            style={{ width: size, height: size, filter: shadowFor(size) }}
+            style={{ width: size, height: h, filter: shadowFor(size) }}
         />
     );
 }

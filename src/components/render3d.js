@@ -50,7 +50,7 @@ function fitFrame(model) {
 }
 
 /** Where the camera looks for an explorer. */
-export const AVATAR_FRAME = { cy: -0.3, h: 4.5 };
+export const AVATAR_FRAME = { cy: -0.22, h: 4.85 }; // a little headroom for tall hats
 
 let stage = null;
 let unavailable = false;

@@ -5,6 +5,7 @@ import GameHeader from "./GameHeader";
 import ColumnProblem from "./ColumnProblem";
 import NumberProblem from "./NumberProblem";
 import CompareProblem from "./CompareProblem";
+import BondPickProblem from "./BondPickProblem";
 import RoundResultModal from "./RoundResultModal";
 import ConfirmLeaveModal from "./ConfirmLeaveModal";
 import LevelUpBanner from "./LevelUpBanner";
@@ -307,7 +308,9 @@ export default function Game({
             ? ColumnProblem
             : problem.kind === "compare"
               ? CompareProblem
-              : NumberProblem;
+              : problem.kind === "bondpick"
+                ? BondPickProblem
+                : NumberProblem;
 
     return (
         <div className="game">
@@ -336,7 +339,9 @@ export default function Game({
                     flash(
                         problem.kind === "column"
                             ? "Fill in every digit"
-                            : "Type your answer first",
+                            : problem.kind === "bondpick"
+                              ? "Pick two numbers first"
+                              : "Type your answer first",
                         "info",
                     )
                 }

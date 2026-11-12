@@ -12,6 +12,7 @@
                (one token is null: the box to fill in)
      bond      { whole, parts: [p, q], missing }       answer: number
                (missing is 0, 1 or "whole")
+     bondpick  { whole, parts: [p, q], tiles: [..] }   answer: "p+q" (picked from the tiles)
      compare   { left, right: { text, value } }        answer: "<" | "=" | ">"
      skip      { values: [..] }                        answer: number
                (one value is null: the gap to fill in)
@@ -362,19 +363,70 @@ const MISSING = [
   { desc: "Missing number: times tables and 2-digit sums", make: () => (Math.random() < 0.5 ? missingTimes([2, 3, 4, 5, 6, 7, 8, 9]) : missingWithin100(true)) },
 ];
 
-/* ---------- Number bonds ---------- */
+/* ---------- Number bonds ----------
+   Two styles, mixed within every level:
+     type the missing number      (kind "bond")
+     pick the two numbers that make the whole from a set of tiles  (kind "bondpick") */
+
+const PICK_CHANCE = 0.4;
 
 const partOrWhole = (wholeChance) => (Math.random() < wholeChance ? "whole" : pick([0, 1]));
 
+/** Shuffle a copy of an array. */
+function shuffled(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = rnd(0, i);
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/**
+ * "Pick the pair": the whole is shown on top, and the learner picks two tiles
+ * that add up to it. Any two tiles that add up to the whole are accepted.
+ */
+function bondPick(whole, p1) {
+  const p2 = whole - p1;
+
+  // tiles use the same step as the parts (tens, fives or ones), so they look like they belong
+  const step = whole > 20 && p1 % 10 === 0 ? 10 : whole > 20 && p1 % 5 === 0 ? 5 : 1;
+  const pool = [];
+  for (let n = step; n <= whole - step; n += step) if (n !== p1 && n !== p2) pool.push(n);
+  // both parts always get a tile (two identical tiles when the parts are equal, e.g. 5 + 5)
+  const tiles = shuffled([p1, p2, ...shuffled(pool).slice(0, 4)]);
+
+  return {
+    kind: "bondpick",
+    whole,
+    parts: [p1, p2],
+    tiles,
+    answer: `${p1}+${p2}`, // what the screen submits when the pair is right
+    key: `bp:${whole}:${p1}`,
+    prompt: `Pick two numbers that make ${whole}`,
+    speech: `Pick two numbers that make ${whole}`,
+    hint: `Think: ${p1} + ? = ${whole}. Which number goes with ${p1}?`,
+  };
+}
+
+/** One ladder level: `spec()` gives [whole, first part]. */
+const bondLevel = (desc, spec, wholeChance = 0) => ({
+  desc: `${desc} (type it, or pick the pair)`,
+  make: () => {
+    const [whole, p1] = spec();
+    return Math.random() < PICK_CHANCE ? bondPick(whole, p1) : bond(whole, p1, partOrWhole(wholeChance));
+  },
+});
+
 const BONDS = [
-  { desc: "Number bonds to 5", make: () => bond(5, rnd(1, 4), pick([0, 1])) },
-  { desc: "Number bonds to 10", make: () => bond(10, rnd(1, 9), pick([0, 1])) },
-  { desc: "Number bonds to 10, find a part or the whole", make: () => bond(10, rnd(1, 9), partOrWhole(0.3)) },
-  { desc: "Number bonds to 20", make: () => bond(20, rnd(1, 19), pick([0, 1])) },
-  { desc: "Number bonds to 10 and 20 mixed", make: () => { const w = pick([10, 20]); return bond(w, rnd(1, w - 1), partOrWhole(0.25)); } },
-  { desc: "Number bonds to 100, in tens", make: () => bond(100, rnd(1, 9) * 10, partOrWhole(0.2)) },
-  { desc: "Number bonds to 100, in fives", make: () => bond(100, rnd(1, 19) * 5, partOrWhole(0.2)) },
-  { desc: "Number bonds to 100, any number", make: () => bond(100, rnd(1, 99), partOrWhole(0.2)) },
+  bondLevel("Number bonds to 5", () => [5, rnd(1, 4)]),
+  bondLevel("Number bonds to 10", () => [10, rnd(1, 9)]),
+  bondLevel("Number bonds to 10, find a part or the whole", () => [10, rnd(1, 9)], 0.3),
+  bondLevel("Number bonds to 20", () => [20, rnd(1, 19)]),
+  bondLevel("Number bonds to 10 and 20 mixed", () => { const w = pick([10, 20]); return [w, rnd(1, w - 1)]; }, 0.25),
+  bondLevel("Number bonds to 100, in tens", () => [100, rnd(1, 9) * 10], 0.2),
+  bondLevel("Number bonds to 100, in fives", () => [100, rnd(1, 19) * 5], 0.2),
+  bondLevel("Number bonds to 100, any number", () => [100, rnd(1, 99)], 0.2),
 ];
 
 /* ---------- Compare ---------- */

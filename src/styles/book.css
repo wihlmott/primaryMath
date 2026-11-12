@@ -351,3 +351,202 @@ button.sticker:focus-visible {
 .dress-preview .book-hint {
   margin: 0;
 }
+
+/* ======================================================
+   Two pages: Dress up / Journey
+   ====================================================== */
+
+.book-tabs-main {
+  display: flex;
+  gap: 0.4rem;
+  margin: 0.4rem 0 0.9rem;
+  padding: 0.25rem;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+}
+
+.book-tabs-main button {
+  flex: 1;
+  margin: 0;
+  padding: 0.5rem 0.6rem;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 999px;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #374151;
+}
+
+.book-tabs-main button[aria-pressed="true"] {
+  background: #2563eb;
+  color: white;
+}
+
+.journey-player {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+/* ======================================================
+   Dress up: stickers scroll on the left, the explorer stays on the right
+   ====================================================== */
+
+.dress {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 176px;
+  gap: 0.7rem;
+  height: min(74vh, 660px);
+  min-height: 440px;
+}
+
+.dress-list {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 0.3rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.dress-list:focus-visible {
+  outline: 3px solid #1d4ed8;
+  outline-offset: 2px;
+  border-radius: 12px;
+}
+
+.dress-count {
+  margin: 0 0 0.4rem;
+  font-size: 0.85rem;
+  color: #4b5563;
+}
+
+.slot-title {
+  margin: 0.7rem 0 0.35rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.slot-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.dress-item {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  margin: 0;
+  padding: 0.35rem 0.45rem;
+  background: white;
+  border: 2px dashed #cbd5e1;
+  border-radius: 14px;
+  box-shadow: none;
+  font: inherit;
+  text-align: left;
+  color: #111827;
+}
+
+.dress-item.got {
+  border: 2px solid #facc15;
+  background: #fef9c3;
+  cursor: pointer;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.dress-item.worn {
+  border-color: #2563eb;
+  background: #dbeafe;
+}
+
+.dress-item:focus-visible {
+  outline: 3px solid #1d4ed8;
+  outline-offset: 2px;
+}
+
+.dress-item .sticker-icon {
+  flex: 0 0 auto;
+}
+
+.item-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  font-size: 0.72rem;
+  line-height: 1.25;
+  color: #4b5563;
+}
+
+.item-text strong {
+  font-size: 0.88rem;
+  color: #111827;
+}
+
+.dress-item.worn .item-text span {
+  font-weight: 700;
+  color: #1e40af;
+}
+
+/* the explorer */
+.dress-avatar {
+  position: sticky;
+  top: 0.5rem;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.3rem 0.6rem;
+  background: radial-gradient(circle at 50% 30%, #fff6cf 0%, #ffffff 75%);
+  border-radius: 20px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+}
+
+.dress-avatar-bounce {
+  animation: bookBounce 0.45s ease-out;
+}
+
+@keyframes bookBounce {
+  0% { transform: scale(0.88); }
+  55% { transform: scale(1.07); }
+  100% { transform: scale(1); }
+}
+
+.dress-avatar .book-name {
+  font-size: 1.15rem;
+}
+
+.wearing {
+  width: 100%;
+  margin: 0;
+  padding: 0 0.3rem;
+  list-style: none;
+  font-size: 0.72rem;
+}
+
+.wearing li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.3rem;
+  padding: 0.12rem 0;
+  border-top: 1px solid #e5e7eb;
+  color: #6b7280;
+}
+
+.wearing strong {
+  text-align: right;
+  color: #111827;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dress-avatar-bounce {
+    animation: none;
+  }
+}

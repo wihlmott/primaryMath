@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
     AVATARS,
     BONUS_MAX_HEARTS,
@@ -24,6 +24,8 @@ import {
 } from "../utils/progress";
 import { describeLevel, ladderLength } from "../utils/mathEngine";
 import Avatar from "../components/Avatar";
+import AvatarViewer from "../components/AvatarViewer";
+import MapIcon from "../components/MapIcon";
 import ModeIcon from "../components/ModeIcon";
 import PwaPanel, { UpdateBanner } from "../components/PwaPanel";
 import "../styles/landing.css";
@@ -50,6 +52,37 @@ function initialSettings() {
         showHelp: typeof saved.showHelp === "boolean" ? saved.showHelp : DEFAULTS.showHelp,
         maxQuestions: QUESTION_CHOICES.includes(saved.maxQuestions) ? saved.maxQuestions : DEFAULTS.maxQuestions,
     };
+}
+
+/**
+ * The big explorer fills about half the screen's height. It is as wide as the card
+ * (so on a phone it is a tall portrait).
+ */
+function computeHeroSize() {
+    return {
+        w: Math.max(220, Math.min(window.innerWidth - 56, 380)),
+        h: Math.max(240, Math.round((window.innerHeight * 0.5) / 10) * 10),
+    };
+}
+
+function useHeroSize() {
+    const [size, setSize] = useState(computeHeroSize);
+    useEffect(() => {
+        let timer;
+        const onResize = () => {
+            clearTimeout(timer);
+            timer = setTimeout(() => {
+                const next = computeHeroSize();
+                setSize((prev) => (prev.w === next.w && prev.h === next.h ? prev : next));
+            }, 200);
+        };
+        window.addEventListener("resize", onResize);
+        return () => {
+            clearTimeout(timer);
+            window.removeEventListener("resize", onResize);
+        };
+    }, []);
+    return size;
 }
 
 /** A radio input that looks like a button. The input stays keyboard-focusable. */
@@ -89,7 +122,20 @@ export default function LandingPage({ onStart, onOpenBook }) {
     const effectiveLevel = Math.min(startingLevel, ladderMax);
 
     const trimmed = name.trim();
-    const hasAdventure = Boolean(getLearner(trimmed));
+    const savedLearner = getLearner(trimmed);
+    const hasAdventure = Boolean(savedLearner);
+
+    const heroSize = useHeroSize();
+    const stripRef = useRef(null);
+
+    // keep the chosen explorer centred in the scrolling strip (scrolls the strip only, never the page)
+    useEffect(() => {
+        const strip = stripRef.current;
+        const chosen = strip?.querySelector("input:checked")?.closest("label");
+        if (!strip || !chosen) return;
+        const left = chosen.offsetLeft - (strip.clientWidth - chosen.clientWidth) / 2;
+        strip.scrollTo({ left, behavior: "smooth" });
+    }, [avatar]);
 
     function pickProfile(profile) {
         setName(profile.name);
@@ -153,6 +199,14 @@ export default function LandingPage({ onStart, onOpenBook }) {
         <div className="landing">
             <form className="landing-card" onSubmit={start}>
                 <UpdateBanner />
+                {hasAdventure && (
+                    <div className="landing-top">
+                        <button type="button" className="map-btn" onClick={() => onOpenBook(trimmed)}>
+                            <MapIcon size={30} />
+                            <span>My adventure</span>
+                        </button>
+                    </div>
+                )}
                 <h1 className="landing-title">Math Adventure</h1>
                 <p className="tagline">Pick your explorer and let's go!</p>
 
@@ -176,6 +230,35 @@ export default function LandingPage({ onStart, onOpenBook }) {
                     </fieldset>
                 )}
 
+                {/* the chosen explorer, big: drag to make them look around */}
+                <div className="hero">
+                    <div className="hero-stage">
+                        <AvatarViewer id={avatar} equipped={savedLearner?.equipped} size={heroSize.w} height={heroSize.h} />
+                    </div>
+                    <div className="hero-name">{AVATARS.find((a) => a.id === avatar)?.name}</div>
+                    <p className="hero-hint">Drag to make them look around</p>
+                </div>
+
+                {/* everyone else, in a strip that scrolls sideways */}
+                <fieldset className="group">
+                    <legend>Pick your explorer</legend>
+                    <div className="avatar-strip" ref={stripRef}>
+                        {AVATARS.map((a) => (
+                            <RadioChoice
+                                key={a.id}
+                                name="avatar"
+                                label={`Explorer: ${a.name}`}
+                                checked={avatar === a.id}
+                                onChange={() => setAvatar(a.id)}
+                                className="strip-body"
+                            >
+                                <Avatar id={a.id} size={60} />
+                                <span className="strip-name">{a.name}</span>
+                            </RadioChoice>
+                        ))}
+                    </div>
+                </fieldset>
+
                 <div className="group">
                     <label className="group-label" htmlFor="learner-name">
                         Your name
@@ -191,24 +274,6 @@ export default function LandingPage({ onStart, onOpenBook }) {
                         onChange={(e) => setName(e.target.value)}
                     />
                 </div>
-
-                <fieldset className="group">
-                    <legend>Pick your explorer</legend>
-                    <div className="avatar-grid">
-                        {AVATARS.map((a) => (
-                            <RadioChoice
-                                key={a.id}
-                                name="avatar"
-                                label={`Explorer: ${a.name}`}
-                                checked={avatar === a.id}
-                                onChange={() => setAvatar(a.id)}
-                                className="avatar-body"
-                            >
-                                <Avatar id={a.id} size={66} />
-                            </RadioChoice>
-                        ))}
-                    </div>
-                </fieldset>
 
                 {MODE_GROUPS.map((group) => (
                     <fieldset className="group" key={group.id}>
@@ -239,16 +304,6 @@ export default function LandingPage({ onStart, onOpenBook }) {
                     Let's go! 🚀
                 </button>
                 {!trimmed && <p className="start-hint">Type your name to start</p>}
-
-                {hasAdventure && (
-                    <button
-                        type="button"
-                        className="link-btn"
-                        onClick={() => onOpenBook(trimmed)}
-                    >
-                        🗺️ My adventure
-                    </button>
-                )}
 
                 <details className="grownups">
                     <summary>

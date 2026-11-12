@@ -823,3 +823,103 @@ Carries are positioned relative to digit columns.
 .compare-choices button.right:disabled small {
   color: #166534;
 }
+
+/* ======================================================
+   Number bonds: pick the pair
+   ====================================================== */
+
+.bond-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+/* the two circles are buttons here (tap to put a tile back) */
+button.bond-circle {
+  margin: 0;
+  padding: 0 0.2rem;
+  box-shadow: none;
+  font-family: inherit;
+  color: inherit;
+}
+
+.bond-circle.slot.blank {
+  border-style: dashed;
+  background: #eff6ff;
+}
+
+.bond-circle.slot.wrong {
+  border-color: #dc2626;
+  animation: shake 0.35s;
+}
+
+.bond-circle.slot.correct {
+  border-style: solid;
+  border-color: #16a34a;
+  background: #dcfce7;
+  color: #166534;
+  animation: pop 0.35s ease-out;
+}
+
+.pick-tiles {
+  display: grid;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-top: 0.8rem;
+}
+
+.pick-tile {
+  min-width: 3.6rem;
+  height: 3.6rem;
+  margin: 0;
+  padding: 0 0.7rem;
+  border: 3px solid #cbd5e1;
+  border-radius: 16px;
+  background: white;
+  font-size: 1.7rem;
+  font-weight: 800;
+  touch-action: manipulation;
+}
+
+.pick-tile.used {
+  opacity: 0.25;
+}
+
+/* after two wrong tries the right tiles glow */
+.pick-tile.glow {
+  box-shadow: 0 0 0 4px #f59e0b;
+}
+
+.pick-tile:focus-visible,
+button.bond-circle:focus-visible {
+  outline: 3px solid #1d4ed8;
+  outline-offset: 2px;
+}
+
+/* the big green "Check" button used where there is no number pad */
+.check-big {
+  width: 100%;
+  max-width: 300px;
+  margin: 0.9rem 0 0;
+  padding: 0.85rem;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #22c55e, #16a34a);
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: white;
+  touch-action: manipulation;
+}
+
+.check-big:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bond-circle.slot.wrong,
+  .bond-circle.slot.correct {
+    animation: none;
+  }
+}
